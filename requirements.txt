@@ -1,0 +1,11 @@
+black
+build
+flake8
+isort
+logfunc==1.9.1
+pytest
+pytest-cov
+pytest-mock
+requests
+setuptools>=61.0
+twine
