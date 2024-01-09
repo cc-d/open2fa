@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "name": "Run Pytest tests",
+      "type": "python",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "tests.py",
+        "-s",
+        "-vv",
+        "--cov=open2fa",
+        "--cov-report=term-missing",
+        "--log-cli-level=DEBUG"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
+}

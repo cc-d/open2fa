@@ -12,6 +12,7 @@ from functools import wraps
 from pathlib import Path
 from .utils import generate_totp_token
 from .config import OPEN2FA_KEYDIR, OPEN2FA_KEYDIR_PERMS, INTERVAL
+from .cli_config import MSGS
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,7 @@ def get_secret_key(org_name: str, open2fa_dir: str = OPEN2FA_KEYDIR) -> str:
     """
     key_path = Path(osp.join(open2fa_dir, f'{org_name.lower()}.key'))
     if key_path.is_file():
+        logger.debug(f"Found key file '{key_path}'")
         with open(key_path, 'r') as f:
             return f.read().strip()
     return None
@@ -106,8 +108,10 @@ def delete_secret_key(
     """
     key_path = osp.join(open2fa_dir, f'{org_name.lower()}.key')
     if osp.isfile(key_path):
+        logger.info(f"Deleting key file '{key_path}'")
         os.remove(key_path)
         return True
+    logger.warning(f"No key file found for '{org_name}'")
     return False
 
 
@@ -134,6 +138,7 @@ def get_key_files(
     ]
 
     if org_name is not None:
+        logger.debug(f'filtering key files that dont start with {org_name}')
         dirfiles = [f for f in dirfiles if f.startswith(org_name.lower())]
 
     return [Open2faKey(Path(osp.join(open2fa_dir, f))) for f in dirfiles]
@@ -173,7 +178,16 @@ class Open2faKey:
         return None
 
     def __repr__(self) -> str:
-        return f'<Open2faKey: {self.name}>'
+        _rstr = '<Open2faKey '
+        for k, v in {
+            'path': self.keypath,
+            'name': self.name,
+            'secret': self.censored,
+            'token': self.current_token,
+            'interval': self.last_interval,
+        }.items():
+            _rstr += f'{k}={v}, '
+        return _rstr[:-2] + '>'
 
 
 class Open2FA:

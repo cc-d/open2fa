@@ -1,4 +1,5 @@
 import os
+import pytest
 import os.path as osp
 import random as RAN
 import shutil
@@ -10,7 +11,9 @@ from glob import glob
 from io import StringIO
 from unittest.mock import patch
 import logging
-import pytest
+from open2fa.cli_utils import Open2faKey, Open2FA
+from open2fa.utils import generate_totp_token
+from open2fa.cli_config import MSGS
 
 logger = logging.getLogger(__name__)
 TESTKEY = 'JBSWY3DPEHPK3PXP'
@@ -21,7 +24,7 @@ def _ranstr(n: int) -> str:
     return ''.join(RAN.choice(STR.ascii_letters) for _ in range(n))
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def setenv():
     """Set the OPEN2FA_KEYDIR environment variable."""
     os.environ['OPEN2FA_KEYDIR'] = '/tmp/' + _ranstr(10)
@@ -31,11 +34,14 @@ def setenv():
 
 def test_add_key():
     """Test adding a key."""
-    sys.argv = ['open2fa', 'add', 'test', TESTKEY]
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from open2fa.cli import main
+    from open2fa.cli import main
 
-        main()
+    sys.argv = ['open2fa', 'add', 'test', TESTKEY]
+
+    with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch('builtins.input', return_value='y') as fake_input:
+            main()
+
     assert 'Added key' in fake_out.getvalue()
 
 
@@ -116,25 +122,12 @@ def test_list_specific_org():
     """Test listing keys for a specific organization."""
     org_name = 'testorg'
     sys.argv = ['open2fa', 'list', org_name]
+    os.environ['OPEN2FA_KEYDIR'] = '/tmp/' + org_name
+    with open(f"{os.environ['OPEN2FA_KEYDIR']}/{org_name}.key", 'w') as f:
+        f.write(TESTKEY)
+
     from open2fa.cli import main
 
     with patch('sys.stdout', new=StringIO()) as fake_out:
         main()
     assert org_name in fake_out.getvalue()
-
-
-# Fixing the tests
-def test_no_keys_to_list():
-    """Test listing keys when no keys are present."""
-    sys.argv = ['open2fa', 'list']
-    from open2fa.cli import main
-
-    for delfile in glob(osp.join(os.environ['OPEN2FA_KEYDIR'], '*.key')):
-        logger.info(f"Deleting {delfile}")
-        os.remove(delfile)
-
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        with patch('sys.exit') as fake_exit:
-            main()
-    assert fake_exit.called
-    assert 'No keys found' in fake_out.getvalue()

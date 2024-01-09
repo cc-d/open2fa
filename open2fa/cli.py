@@ -8,6 +8,7 @@ import sys
 from time import sleep
 from pathlib import Path
 from logging import getLogger
+from .config import OPEN2FA_KEYDIR
 from .cli_utils import Open2faKey, Open2FA
 
 logger = getLogger(__name__)
@@ -113,7 +114,7 @@ def main() -> None:
     args.command = args.command.lower()
     repeat = args.repeat if hasattr(args, 'repeat') else None
 
-    Op2FA = Open2FA()
+    Op2FA = Open2FA(os.environ.get('OPEN2FA_KEYDIR') or OPEN2FA_KEYDIR)
 
     if args.command.startswith('a'):
         args = _add_ensure_org_secret(args)
@@ -136,13 +137,6 @@ def main() -> None:
             sleep(0.5)
     # list
     elif args.command.startswith('l'):
-        print()
-        if len(Op2FA.keys) == 0:
-            print("No keys found.")
-            sys.exit(1)
-        if args.org_name:
-            Op2FA.print_keys()
-
         Op2FA.print_keys()
 
     # delete
