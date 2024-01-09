@@ -278,15 +278,12 @@ class Open2FA:
                     break
         return success
 
-    def print_keys(self, org_name: str = None):
+    def print_keys(self) -> None:
         """Print all keys in the open2fa directory if org_name is None.
         Otherwise, print all keys starting with org_name.
         """
         print('Org Name'.ljust(20), 'Secret', '\t', 'Key Path')
         for key in self.keys:
-            if org_name is not None:
-                if not key.name.startswith(org_name):
-                    continue
             print(key.name.ljust(20), key.censored, '\t', key.keypath)
 
     def generate(self, org_name: TYPE.Optional[str] = None) -> dict:
