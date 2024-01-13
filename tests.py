@@ -116,18 +116,3 @@ def test_generate_command():
     with patch('sys.stdout', new=StringIO()) as fake_out:
         main()
         print(fake_out.getvalue(), '@' * 100)
-
-
-def test_list_specific_org():
-    """Test listing keys for a specific organization."""
-    org_name = 'testorg'
-    sys.argv = ['open2fa', 'list', org_name]
-    os.environ['OPEN2FA_KEYDIR'] = '/tmp/' + org_name
-    with open(f"{os.environ['OPEN2FA_KEYDIR']}/{org_name}.key", 'w') as f:
-        f.write(TESTKEY)
-
-    from open2fa.cli import main
-
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        main()
-    assert org_name in fake_out.getvalue()

@@ -13,17 +13,9 @@ from pathlib import Path
 from .utils import generate_totp_token
 from .config import OPEN2FA_KEYDIR, OPEN2FA_KEYDIR_PERMS, INTERVAL
 from .cli_config import MSGS
+from .ex import NoKeyFoundError
 
 logger = logging.getLogger(__name__)
-
-
-class NoKeyFoundError(FileNotFoundError):
-    def __init__(self, org_name: str):
-        self.org_name = org_name
-        super().__init__(
-            f"No key found for organization '{org_name}'. "
-            "Use the 'add' command (cli.py add) to add a new org key."
-        )
 
 
 def ensure_open2fa_dir(dirpath: str = OPEN2FA_KEYDIR) -> str:
