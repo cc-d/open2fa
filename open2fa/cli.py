@@ -109,6 +109,15 @@ def _add_ensure_org_secret(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 
+def _print_gend_tokens(gend: TYPE.Dict[str, str]) -> None:
+    """Print the generated tokens."""
+    if len(gend) <= 0:
+        return
+    print(f'\n<<< Generated {len(gend)} codes >>>\n\n'.upper())
+    for name, code in gend.items():
+        print(f'{name}: {code}\n')
+
+
 def main() -> None:
     args = parse_args()
     args.command = args.command.lower()
@@ -124,10 +133,7 @@ def main() -> None:
     elif args.command.startswith('g'):
         while True:
             gend = Op2FA.generate(args.org_name)
-            if len(gend) > 1:
-                print(f'\n<<< Generated {len(gend)} codes >>>\n\n'.upper())
-                for name, code in gend.items():
-                    print(f'{name}: {code}\n')
+            _print_gend_tokens(gend)
 
             # only $x codes were requested
             if repeat is not None:
