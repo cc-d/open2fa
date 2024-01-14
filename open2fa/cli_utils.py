@@ -7,8 +7,6 @@ import typing as TYPE
 import sys
 import time
 from glob import glob
-from time import sleep
-from functools import wraps
 from pathlib import Path
 from .utils import generate_totp_token
 from .config import OPEN2FA_KEYDIR, OPEN2FA_KEYDIR_PERMS, INTERVAL
