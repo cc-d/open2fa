@@ -106,8 +106,7 @@ def delete_secret_key(
 def get_key_files(
     org_name: TYPE.Optional[str] = None, open2fa_dir: str = OPEN2FA_KEYDIR
 ) -> TYPE.List[Path]:
-    """
-    Get the file path for the secret key of an organization.
+    """Get the file path for the secret key of an organization.
     Args:
         org_name (Optional[str]): The name of the organization. If empty,
             return all key files.
