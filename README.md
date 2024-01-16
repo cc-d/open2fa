@@ -1,10 +1,12 @@
 # open2fa
 
-Open2FA CLI is a 100% LIBRE command-line tool for generating Two-Factor Authentication (2FA) TOTP codes. It's designed for simplicity and security, allowing users to manage and generate TOTP codes efficiently and securely across multiple devices.
+Open2FA is a 100% LIBRE tool for generating Two-Factor Authentication (2FA) TOTP codes.
+
+As of now (v0.1.0) it is only a basic CLI, but in the future an api, webui, and .apk are planned to enable (optional, user-configured) 2FA across multiple devices in a manner that respects user privacy and freedom.
 
 ## File Locations and Environment Variables
 
-**Secret Key Storage**: TOTP secret keys are stored in the directory specified by the `OPEN2FA_KEYDIR` environment variable. By default, this is set to `.open2fa` in the user's home directory.
+**Secret Key Storage**: TOTP secret keys are stored in the directory specified by the `OPEN2FA_KEYDIR` environment variable. By default, this is set to `.open2fa` in the user's home directory, with secure permissions that only allow the user to read and write to/from the directory.
 
 ## Installation
 
@@ -14,143 +16,96 @@ Install the CLI using `pip`:
 pip install open2fa
 ```
 
+Install with dev dependencies:
+
+```bash
+pip install 'open2fa[dev]'
+```
+
 ## CLI Usage
 
 1. **Add a TOTP Secret**:
+
    ```bash
    open2fa add [org_name] [secret]
    ```
+
+   Example Output:
+
+   ```
+   Added key: <Open2faKey path=/Users/user/.open2fa/NewOrgName.key, name=NewOrgName, secret=I...E, token=None, interval=-1>
+   ```
+
 2. **Delete a TOTP Secret**:
+
    ```bash
    open2fa delete [org_name]
    ```
+
+   Example Output:
+
+   ```
+   Deleted key for 'NewOrgName'
+   ```
+
 3. **List TOTP Secrets**:
+
    ```bash
    open2fa list
    ```
-4. **Generate a TOTP Code**:
+
+   Example Output:
+
+   ```
+   Org Name             Secret      Key Path
+   NewOrgName           N...E       /Users/user/.open2fa/NewOrgName.key
+   AnotherOrg           A...Z       /Users/user/.open2fa/AnotherOrg.key
+   ```
+
+4. **Generate 2FA Codes**:
+
+   Generate codes for keys saved in the `OPEN2FA_KEYDIR` directory:
+
+   ```bash
+   open2fa generate
+
+   <<< GENERATED 5 CODES >>>
+
+   test2: 361070
+
+   test3: 361070
+
+   test: 393705
+
+   testorg: 393705
+
+   pypi: 214272
+   ```
+
+   **Generate 2FA code for a specific org**:
+
    ```bash
    open2fa generate [org_name]
    ```
 
+   Example Output:
+
+   ```
+   <<< GENERATED 1 CODE >>>
+
+   NewOrgName: 123456
+   ```
+
+   Tokens will continue to be generated until the user exits the program with `Ctrl+C`.
+
 ## How it Works
 
-- **Argument Parsing**: The CLI parses user commands and arguments using `argparse`.
 - **Secret Key Management**: Keys are added, retrieved, or deleted from the `OPEN2FA_KEYDIR`.
 - **Token Generation**: Generates TOTP tokens using the `generate_totp_token` function in `utils.py`, which implements the standard TOTP algorithm.
 
-## Usage Example
-
-```
-(venv) mym2@Carys-MacBook-Pro open2fa % ./open2fa/cli.py -h
-usage: cli.py [-h] {add,a,delete,d,generate,g,list,l} ...
-
-open2fa CLI: simple 2FA CLI interface
-
-positional arguments:
-  {add,a,delete,d,generate,g,list,l}
-    add (a)             Add a new TOTP secret key for an organization
-    delete (d)          Delete a TOTP secret key for an organization
-    generate (g)        Generate a TOTP code for an organization
-    list (l)            List TOTP keys
-
-options:
-  -h, --help            show this help message and exit
-```
-
-List all TOTP secrets:
-
-```
-(venv) py3 -m open2fa.cli l
-
-Org Name             Secret      Key Path
-test_org             t...t       /Users/mym2/.open2fa/test_org.key
-test2                I...E       /Users/mym2/.open2fa/test2.key
-test3                I...E       /Users/mym2/.open2fa/test3.key
-test                 J...P       /Users/mym2/.open2fa/test.key
-testorg              J...P       /Users/mym2/.open2fa/testorg.key
-addelete             J...P       /Users/mym2/.open2fa/addelete.key
-zhvufwfnfy           J...P       /Users/mym2/.open2fa/zhvufwfnfy.key
-
-```
-
-Add a new TOTP secret:
-
-```
-(venv) py3 -m open2fa.cli a NewOrgName JBSWY3DPEHPK3PXP
-Added key: <Open2faKey: neworgname>
-(venv) py3 -m open2fa.cli l | grep 'neworgname'
-neworgname           J...P       /Users/mym2/.open2fa/neworgname.key
-```
-
-Generate a single TOTP code:
-
-```
-(venv) py3 -m open2fa.cli g -r 1
-Error generating token for 'test_org': Incorrect padding
-
-<<< GENERATED 7 CODES >>>
-
-test2: 918215
-
-test3: 918215
-
-test: 597377
-
-testorg: 597377
-
-neworgname: 597377
-
-addelete: 597377
-
-zhvufwfnfy: 597377
-```
-
-Continuous generation example:
-
-```
-(venv) py3 -m open2fa.cli g
-Error generating token for 'test_org': Incorrect padding
-
-<<< GENERATED 7 CODES >>>
-
-test2: 918215
-
-test3: 918215
-
-test: 597377
-
-testorg: 597377
-
-neworgname: 597377
-
-addelete: 597377
-
-zhvufwfnfy: 597377
-
-
-<<< GENERATED 7 CODES >>>
-
-
-test2: 706572
-
-test3: 706572
-
-test: 556351
-
-testorg: 556351
-
-neworgname: 556351
-
-addelete: 556351
-
-zhvufwfnfy: 556351
-
-```
-
 ## Testing
 
-You can run the tests by running `pytest` in the root directory of the project
+You can run the tests by running `pytest tests.py` in the root directory of the project
 or by running the vscode pytest launch configuration with f5.
 
 ```

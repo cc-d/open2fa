@@ -72,7 +72,7 @@ def test_key_list():
 
     with patch('sys.stdout', new=StringIO()) as fake_out:
         main()
-    assert orgname.lower() in fake_out.getvalue()
+    assert orgname in fake_out.getvalue()
 
 
 def test_add_already_exists():

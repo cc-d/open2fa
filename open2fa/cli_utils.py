@@ -7,7 +7,12 @@ import time
 from glob import glob
 from pathlib import Path
 from .utils import generate_totp_token
-from .config import OPEN2FA_KEYDIR, OPEN2FA_KEYDIR_PERMS, INTERVAL
+from .config import (
+    OPEN2FA_KEYDIR,
+    OPEN2FA_KEYDIR_PERMS,
+    INTERVAL,
+    OPEN2FA_KEY_PERMS,
+)
 from .cli_config import MSGS
 from .ex import NoKeyFoundError
 
@@ -50,7 +55,7 @@ def add_secret_key(
         str: The path to the key file
     """
     ensure_open2fa_dir(open2fa_dir)
-    keypath = osp.join(open2fa_dir, f'{org_name.lower()}.key')
+    keypath = osp.join(open2fa_dir, f'{org_name}.key')
     if osp.isfile(keypath):
         logger.warning(f"Key file '{keypath}' already exists. Overwriting.")
 
@@ -58,8 +63,8 @@ def add_secret_key(
     with open(keypath, 'w') as f:
         f.write(secret)
 
-    logger.info(f"Setting key file permissions to {OPEN2FA_KEYDIR_PERMS}")
-    os.chmod(keypath, OPEN2FA_KEYDIR_PERMS)
+    logger.info(f"Setting key file permissions to {OPEN2FA_KEY_PERMS}")
+    os.chmod(keypath, OPEN2FA_KEY_PERMS)
 
     return keypath
 
@@ -75,7 +80,7 @@ def get_secret_key(org_name: str, open2fa_dir: str = OPEN2FA_KEYDIR) -> str:
         Optional[str]: The base32 encoded secret key for the organization if
         available. Otherwise, None.
     """
-    key_path = Path(osp.join(open2fa_dir, f'{org_name.lower()}.key'))
+    key_path = Path(osp.join(open2fa_dir, f'{org_name}.key'))
     if key_path.is_file():
         logger.debug(f"Found key file '{key_path}'")
         with open(key_path, 'r') as f:
@@ -94,7 +99,7 @@ def delete_secret_key(
         Optional[bool]: True if the key was deleted, False otherwise.
 
     """
-    key_path = osp.join(open2fa_dir, f'{org_name.lower()}.key')
+    key_path = osp.join(open2fa_dir, f'{org_name}.key')
     if osp.isfile(key_path):
         logger.info(f"Deleting key file '{key_path}'")
         os.remove(key_path)
@@ -200,7 +205,7 @@ class Open2FA:
 
     def __getitem__(self, org_name: str) -> Open2faKey:
         for key in self.keys:
-            if key.name == org_name.lower():
+            if key.name == org_name:
                 return key
         raise NoKeyFoundError(org_name)
 
@@ -208,8 +213,13 @@ class Open2FA:
         censored_keys = ' '.join([key.censored for key in self.keys])
         return f'<AllOpen2faKeys: {censored_keys}>'
 
-    def _build_keypath(self, org_name: str) -> str:
-        return osp.join(self.dirstr, f'{org_name.lower().strip()}.key')
+    def _build_keypath(self, org_name: str, case_sensitive: bool = True):
+        """Build the path to the key file for an added key org."""
+        org_name = org_name.strip()
+        if not case_sensitive:
+            org_name = org_name.lower()
+
+        return osp.join(self.dirstr, '%s.key' % org_name)
 
     def refresh_keys(self) -> None:
         """Refresh the keys in the open2fa directory."""
