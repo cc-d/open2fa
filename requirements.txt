@@ -1,5 +1,6 @@
 black
 build
+cryptography
 flake8
 isort
 logfunc==1.9.1

@@ -1,19 +1,21 @@
+import logging
 import os
-import pytest
 import os.path as osp
 import random as RAN
+import re
 import shutil
 import string as STR
-import re
 import subprocess as SUB
 import sys
 from glob import glob
 from io import StringIO
 from unittest.mock import patch
-import logging
-from open2fa.cli_utils import Open2faKey, Open2FA
-from open2fa.utils import generate_totp_token
+
+import pytest
+
 from open2fa.cli_config import MSGS
+from open2fa.cli_utils import Open2FA, Open2faKey
+from open2fa.utils import generate_totp_token
 
 logger = logging.getLogger(__name__)
 TESTKEY = 'JBSWY3DPEHPK3PXP'

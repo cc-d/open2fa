@@ -1,20 +1,23 @@
 import logging
 import os
 import os.path as osp
-import typing as TYPE
 import sys
 import time
+import typing as TYPE
 from glob import glob
 from pathlib import Path
-from .utils import generate_totp_token
+from .common import gen_uuid, enc_secret, dec_secret
+from .cli_config import MSGS
 from .config import (
+    INTERVAL,
+    OPEN2FA_ID,
+    OPEN2FA_KEY_PERMS,
     OPEN2FA_KEYDIR,
     OPEN2FA_KEYDIR_PERMS,
-    INTERVAL,
-    OPEN2FA_KEY_PERMS,
 )
-from .cli_config import MSGS
 from .ex import NoKeyFoundError
+from .utils import generate_totp_token
+
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +150,8 @@ class Open2faKey:
         self.current_token = None
         self.last_interval = -1
 
+        self.enc_secret = enc_secret(self.secret) if OPEN2FA_ID else None
+
     def generate(self) -> TYPE.Optional[str]:
         print_token = False
         cur_interval = int(time.time()) // INTERVAL
@@ -177,6 +182,7 @@ class Open2faKey:
             'secret': self.censored,
             'token': self.current_token,
             'interval': self.last_interval,
+            'enc_secret': self.enc_secret,
         }.items():
             _rstr += f'{k}={v}, '
         return _rstr[:-2] + '>'
@@ -189,6 +195,7 @@ class Open2FA:
         self,
         open2fa_keydir: TYPE.Union[str, Path] = OPEN2FA_KEYDIR,
         interval: int = INTERVAL,
+        o2fa_id: TYPE.Optional[str] = OPEN2FA_ID,
     ):
         ensure_open2fa_dir(open2fa_keydir)
         self.dirpath, self.dirstr = (Path(open2fa_keydir), str(open2fa_keydir))
@@ -199,6 +206,7 @@ class Open2FA:
             for keypath in glob(osp.join(self.dirstr, '*.key'))
         ]
         self.keymap = {key.name: key for key in self.keys}
+        self.o2fa_id = o2fa_id
 
     def __iter__(self):
         return iter(self.keys)
@@ -211,7 +219,10 @@ class Open2FA:
 
     def __repr__(self):
         censored_keys = ' '.join([key.censored for key in self.keys])
-        return f'<AllOpen2faKeys: {censored_keys}>'
+        return (
+            '<Open2fa:'
+            f' id={self.o2fa_id[0:2] if self.o2fa_id else None} {censored_keys}>'
+        )
 
     def _build_keypath(self, org_name: str, case_sensitive: bool = True):
         """Build the path to the key file for an added key org."""
@@ -304,3 +315,17 @@ class Open2FA:
             if token is not None:
                 new_tokens[key.name] = token
         return new_tokens
+
+    def cli_init(self) -> None:
+        """Initialize the open2fa directory and key file."""
+        if OPEN2FA_ID is not None:
+            logger.info(
+                f"OPEN2FA_ID is set. Skipping creation of '{OPEN2FA_ID}'"
+            )
+            return
+
+        new_uuid = gen_uuid()
+        with open(self.dirpath / 'open2fa.id', 'w') as f:
+            f.write(new_uuid)
+
+        logger.info(f'NEW OPEN2FA_ID: {new_uuid}')

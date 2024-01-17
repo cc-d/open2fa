@@ -32,6 +32,7 @@ def parse_args() -> argparse.Namespace:
             'add': {'a', '-a', '--add', '-add', 'add'},
             'delete': {'d', '-d', '--delete', '-delete', 'delete'},
             'generate': {'g', '-g', '--generate', '-generate', 'generate'},
+            'init': {'i', '-i', '--init', '-init', 'init'},
         }
         first_arg = sys.argv[1].lower()
         for cmd, aliases in alias_map.items():
@@ -89,6 +90,13 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help='Name of the organization or its prefix',
         nargs='?',
+    )
+
+    # Init command
+    parser_init = subparsers.add_parser(
+        'init',
+        aliases=['i', '-i', '--init'],
+        help='Initialize open2fa cli to work with remote api',
     )
 
     return parser.parse_args()
@@ -155,6 +163,12 @@ def main() -> None:
         else:
             print(f"Key for '{args.org_name}' not found.")
             sys.exit(1)
+
+    elif args.command.startswith('i'):
+        if hasattr(Op2FA, 'o2fa_id'):
+            print('Already initialized.', Op2FA.o2fa_id[0:2] + '...')
+            sys.exit(1)
+        Op2FA.cli_init()
 
 
 if __name__ == "__main__":
