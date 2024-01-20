@@ -1,31 +1,40 @@
 import uuid
 from hashlib import blake2s
+from typing import Optional as Opt
+import base64 as b64
 
 from cryptography.fernet import Fernet
 
 from open2fa import config
+from logfunc import logf
 
 
-def enc_totp_secret(secret: str) -> str:
-    if config.OPEN2FA_ID is None:
-        raise Exception(
-            'OPEN2FA_ID is not set. Add to env var or .open2fa/open2fa.id'
-        )
+def _ensure_fernet(uid: Opt[str] = None) -> Fernet:
+    if uid is None:
+        if config.OPEN2FA_ID is None:
+            raise Exception(
+                'OPEN2FA_ID is not set. Add to env var or .open2fa/open2fa.id'
+            )
+        uid = config.OPEN2FA_ID.replace('-', '')
+    b64key = b64.b64encode(uid.encode('utf-8'))
+    return Fernet(b64key)
 
-    f = Fernet(config.OPEN2FA_ID.replace('-', ''))
+
+def enc_totp_secret(secret: str | bytes, uid: Opt[str] = None) -> str:
+    """encrypts a totp secret using the OPEN2FA_ID"""
+    if isinstance(secret, bytes):
+        secret = secret.decode('utf-8')
+    f = _ensure_fernet(uid)
 
     return f.encrypt(secret.encode('utf-8')).decode('utf-8')
 
 
-def dec_totp_secret(secret: str | bytes) -> str:
-    if config.OPEN2FA_ID is None:
-        raise Exception(
-            'OPEN2FA_ID is not set. Add to env var or .open2fa/open2fa.id'
-        )
+def dec_totp_secret(secret: str | bytes, uid: Opt[str] = None) -> str:
+    """decrypts a totp secret using the OPEN2FA_ID"""
     if isinstance(secret, bytes):
         secret = secret.decode('utf-8')
 
-    f = Fernet(config.OPEN2FA_ID.replace('-', ''))
+    f = _ensure_fernet(uid)
 
     return f.decrypt(secret.encode('utf-8')).decode('utf-8')
 
