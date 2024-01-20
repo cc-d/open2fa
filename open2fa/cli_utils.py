@@ -6,7 +6,7 @@ import time
 import typing as TYPE
 from glob import glob
 from pathlib import Path
-from .common import gen_uuid, enc_secret, dec_secret
+from .common import gen_uuid, enc_totp_secret, dec_totp_secret
 from .cli_config import MSGS
 from .config import (
     INTERVAL,
@@ -150,7 +150,9 @@ class Open2faKey:
         self.current_token = None
         self.last_interval = -1
 
-        self.enc_secret = enc_secret(self.secret) if OPEN2FA_ID else None
+        self.enc_totp_secret = (
+            enc_totp_secret(self.secret) if OPEN2FA_ID else None
+        )
 
     def generate(self) -> TYPE.Optional[str]:
         print_token = False
@@ -182,7 +184,7 @@ class Open2faKey:
             'secret': self.censored,
             'token': self.current_token,
             'interval': self.last_interval,
-            'enc_secret': self.enc_secret,
+            'enc_totp_secret': self.enc_totp_secret,
         }.items():
             _rstr += f'{k}={v}, '
         return _rstr[:-2] + '>'
