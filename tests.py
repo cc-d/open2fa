@@ -16,9 +16,15 @@ import pytest
 from open2fa.cli_config import MSGS
 from open2fa.cli_utils import Open2FA, Open2faKey
 from open2fa.utils import generate_totp_token
+from open2fa.common import enc_totp_secret, dec_totp_secret
 
 logger = logging.getLogger(__name__)
-TESTKEY = 'JBSWY3DPEHPK3PXP'
+
+TEST_UID = '4a26e0f1d58048c188324c29ae463101'
+TEST_ORG = 'Test Org'
+TEST_TOTP = 'JBSWY3DPEHPK3PXP'
+TEST_ENC_SEC = 'gAAAAABlq_ia8qJoDt5weWB_BKoOOrhh-FNQHwyVnV0reVIKGH74chN_PCkdWz3MR_TFOzsBqRGCvcpvHf8-f5lNZwkJxwf83_z8hBgQNoDJdiPXUj427jo='
+TEST_SEC = 'JBSWY3DPEHPK3PXP'
 
 
 def _ranstr(n: int) -> str:
@@ -38,7 +44,7 @@ def test_add_key():
     """Test adding a key."""
     from open2fa.cli import main
 
-    sys.argv = ['open2fa', 'add', 'test', TESTKEY]
+    sys.argv = ['open2fa', 'add', 'test', TEST_SEC]
 
     with patch('sys.stdout', new=StringIO()) as fake_out:
         with patch('builtins.input', return_value='y') as fake_input:
@@ -52,7 +58,7 @@ def test_key_delete():
     from open2fa.cli import main
 
     orgname = _ranstr(10)
-    sys.argv = ['open2fa', 'add', orgname, TESTKEY]
+    sys.argv = ['open2fa', 'add', orgname, TEST_SEC]
     main()
     sys.argv = ['open2fa', 'delete', orgname]
     with patch('sys.stdout', new=StringIO()) as fake_out:
@@ -68,7 +74,7 @@ def test_key_list():
     from open2fa.cli import main
 
     orgname = _ranstr(10)
-    sys.argv = ['open2fa', 'add', orgname, TESTKEY]
+    sys.argv = ['open2fa', 'add', orgname, TEST_SEC]
     main()
     sys.argv = ['open2fa', 'list']
 
@@ -82,9 +88,9 @@ def test_add_already_exists():
     from open2fa.cli import main
 
     orgname = _ranstr(10)
-    sys.argv = ['open2fa', 'add', orgname, TESTKEY]
+    sys.argv = ['open2fa', 'add', orgname, TEST_SEC]
     main()
-    sys.argv = ['open2fa', 'add', orgname, TESTKEY]
+    sys.argv = ['open2fa', 'add', orgname, TEST_SEC]
     with patch('sys.stdout', new=StringIO()) as fake_out:
         with patch('builtins.input', return_value='y') as fake_input:
             main()
@@ -118,3 +124,20 @@ def test_generate_command():
     with patch('sys.stdout', new=StringIO()) as fake_out:
         main()
         print(fake_out.getvalue(), '@' * 100)
+
+
+# common.py
+def test_enc_dec_totp_secret():
+    """Test encrypting and decrypting a TOTP secret."""
+    enc = enc_totp_secret(TEST_SEC, TEST_UID)
+    dec = dec_totp_secret(enc, TEST_UID)
+    assert dec == TEST_SEC
+
+
+def test_config_uid():
+    """Test the OPEN2FA_ID config variable."""
+    with patch('open2fa.config.OPEN2FA_ID', None):
+        with pytest.raises(Exception):
+            from open2fa.common import _ensure_fernet
+
+            _ensure_fernet()
