@@ -325,10 +325,15 @@ class Open2FA:
             logger.info(
                 f"OPEN2FA_ID is set. Skipping creation of '{OPEN2FA_ID}'"
             )
-            return
-
-        new_uuid = gen_uuid()
-        with open(self.dirpath / 'open2fa.id', 'w') as f:
-            f.write(new_uuid)
+        else:
+            new_uuid = gen_uuid()
+            with open(self.dirpath / 'open2fa.id', 'w') as f:
+                f.write(new_uuid)
 
         logger.info(f'NEW OPEN2FA_ID: {new_uuid}')
+        for key in self.keys:
+            key.enc_totp_secret = enc_totp_secret(key.secret, new_uuid)
+            logger.info(
+                f"Encrypted secret for '{key.name}' with new OPEN2FA_ID: "
+                f" {key.enc_totp_secret}"
+            )

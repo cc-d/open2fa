@@ -165,7 +165,7 @@ def main() -> None:
             sys.exit(1)
 
     elif args.command.startswith('i'):
-        if hasattr(Op2FA, 'o2fa_id'):
+        if hasattr(Op2FA, 'o2fa_id') and Op2FA.o2fa_id:
             print('Already initialized.', Op2FA.o2fa_id[0:2] + '...')
             sys.exit(1)
         Op2FA.cli_init()
