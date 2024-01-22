@@ -12,6 +12,9 @@ if os.environ.get('OPEN2FA_ID'):
         with open(OPEN2FA_ID, 'r') as f:
             OPEN2FA_ID = f.read().strip()
 
+OPEN2FA_API_URL = os.environ.get(
+    'OPEN2FA_API_URL', 'https://open2fa.liberfy.ai/api/v1'
+)
 
 # octal directory permissions
 OPEN2FA_KEYDIR_PERMS = 0o700

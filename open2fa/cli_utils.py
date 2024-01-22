@@ -14,6 +14,7 @@ from .config import (
     OPEN2FA_KEY_PERMS,
     OPEN2FA_KEYDIR,
     OPEN2FA_KEYDIR_PERMS,
+    OPEN2FA_API_URL,
 )
 from .ex import NoKeyFoundError
 from .utils import generate_totp_token
@@ -140,7 +141,7 @@ def get_key_files(
 
 
 class Open2faKey:
-    def __init__(self, keypath: Path):
+    def __init__(self, keypath: Path, enc_id: TYPE.Optional[str] = OPEN2FA_ID):
         keypath = Path(os.path.abspath(keypath))
         self.keypath = keypath
         self.name = keypath.stem
@@ -150,9 +151,9 @@ class Open2faKey:
         self.current_token = None
         self.last_interval = -1
 
-        self.enc_totp_secret = (
-            enc_totp_secret(self.secret) if OPEN2FA_ID else None
-        )
+        self.enc_totp_secret = None
+        if enc_id is not None:
+            self.enc_totp_secret = enc_totp_secret(self.secret, enc_id)
 
     def generate(self) -> TYPE.Optional[str]:
         print_token = False
