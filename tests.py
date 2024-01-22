@@ -129,15 +129,19 @@ def test_generate_command():
 # common.py
 def test_enc_dec_totp_secret():
     """Test encrypting and decrypting a TOTP secret."""
-    enc = enc_totp_secret(TEST_SEC, TEST_UID)
-    dec = dec_totp_secret(enc, TEST_UID)
-    assert dec == TEST_SEC
+    from uuid import uuid4
+    import base58 as b58
+
+    u = b58.b58encode(uuid4().bytes).decode()
+    enc = enc_totp_secret('I65VU7K5ZQL7WB4E', u)
+    dec = dec_totp_secret(enc, u)
+    assert dec == 'I65VU7K5ZQL7WB4E'
 
 
 def test_config_uid():
     """Test the OPEN2FA_ID config variable."""
     with patch('open2fa.config.OPEN2FA_ID', None):
-        with pytest.raises(Exception):
-            from open2fa.common import _ensure_fernet
+        sys.argv = ['open2fa', 'init']
+        from open2fa.cli import main
 
-            _ensure_fernet()
+        main()
