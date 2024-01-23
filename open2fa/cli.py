@@ -164,10 +164,12 @@ def main() -> None:
             print(f"Key for '{args.org_name}' not found.")
             sys.exit(1)
 
+    # init
     elif args.command.startswith('i'):
         if hasattr(Op2FA, 'o2fa_id') and Op2FA.o2fa_id:
-            print('Already initialized.', Op2FA.o2fa_id[0:2] + '...')
-            sys.exit(1)
+            # print('Already initialized.', Op2FA.o2fa_id[0:2] + '...')
+            # sys.exit(1)
+            pass
         Op2FA.cli_init()
 
 

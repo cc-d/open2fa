@@ -17,6 +17,7 @@ from logfunc import logf
 from open2fa import config
 
 
+@logf()
 def enc_totp_secret(secret: str | bytes, uid: str):
     """encrypts a totp secret using the OPEN2FA_ID"""
     if isinstance(secret, bytes):
@@ -25,6 +26,7 @@ def enc_totp_secret(secret: str | bytes, uid: str):
     return aes_encrypt(secret, uid)
 
 
+@logf()
 def dec_totp_secret(secret: str | bytes, uid: str):
     """decrypts a totp secret using the OPEN2FA_ID"""
     if isinstance(secret, bytes):

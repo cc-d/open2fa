@@ -132,7 +132,7 @@ def test_enc_dec_totp_secret():
     from uuid import uuid4
     import base58 as b58
 
-    u = b58.b58encode(uuid4().bytes).decode()
+    u = 'DzCfDLQRcUQqD251Q7w79c'
     enc = enc_totp_secret('I65VU7K5ZQL7WB4E', u)
     dec = dec_totp_secret(enc, u)
     assert dec == 'I65VU7K5ZQL7WB4E'
