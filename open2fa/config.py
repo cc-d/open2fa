@@ -15,7 +15,6 @@ elif os.path.exists(os.path.join(OPEN2FA_KEYDIR, 'open2fa.id')):
     # read from file if filepath set
     with open(os.path.join(OPEN2FA_KEYDIR, 'open2fa.id'), 'r') as f:
         OPEN2FA_ID = f.read().strip()
-        print(f'OPEN2FA_ID: {OPEN2FA_ID}', '@' * 100)
 
 OPEN2FA_API_URL = os.environ.get(
     'OPEN2FA_API_URL', 'https://open2fa.liberfy.ai/api/v1'

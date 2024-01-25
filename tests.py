@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 TEST_UID = '4a26e0f1d58048c188324c29ae463101'
 TEST_ORG = 'Test Org'
 TEST_TOTP = 'JBSWY3DPEHPK3PXP'
-TEST_ENC_SEC = 'gAAAAABlq_ia8qJoDt5weWB_BKoOOrhh-FNQHwyVnV0reVIKGH74chN_PCkdWz3MR_TFOzsBqRGCvcpvHf8-f5lNZwkJxwf83_z8hBgQNoDJdiPXUj427jo='
 TEST_SEC = 'JBSWY3DPEHPK3PXP'
 
 
@@ -129,8 +128,6 @@ def test_generate_command():
 # common.py
 def test_enc_dec_totp_secret():
     """Test encrypting and decrypting a TOTP secret."""
-    from uuid import uuid4
-    import base58 as b58
 
     u = 'DzCfDLQRcUQqD251Q7w79c'
     enc = enc_totp_secret('I65VU7K5ZQL7WB4E', u)
