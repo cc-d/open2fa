@@ -14,9 +14,8 @@ from unittest.mock import patch
 import pytest
 
 from open2fa.cli_config import MSGS
-from open2fa.cli_utils import Open2FA, Open2faKey
-from open2fa.utils import generate_totp_token
 from open2fa.common import enc_totp_secret, dec_totp_secret
+from open2fa.utils import Open2faKey, Open2FA
 
 logger = logging.getLogger(__name__)
 

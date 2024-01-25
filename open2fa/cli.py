@@ -9,7 +9,7 @@ from time import sleep
 from pathlib import Path
 from logging import getLogger
 from .config import OPEN2FA_KEYDIR
-from .cli_utils import Open2faKey, Open2FA
+from .utils import Open2faKey, Open2FA
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
