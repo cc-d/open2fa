@@ -26,9 +26,10 @@ version = "0.1.0"
 authors = [
   { name="Cary Carter", email="ccarterdev@gmail.com" },
 ]
-description = "A simple 100% libre 2fa tool meant mainly for my own use on Pypi"
+description = "A 2FA CLI tool for generating 2FA codes using TOTP secrets, with optional SECURE remote sync and backup/restore options, allowing code generation from any device."
+
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -37,7 +38,9 @@ classifiers = [
 dependencies = [
     "requests",
     "logfunc==1.9.1",
-    "cryptography",
+    "cryptography<=41.0.7",
+    "pyshared",
+    "base58==2.1.1",
 ]
 
 

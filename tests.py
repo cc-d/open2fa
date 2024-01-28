@@ -15,7 +15,7 @@ import pytest
 
 from open2fa.cli_config import MSGS
 from open2fa.common import enc_totp_secret, dec_totp_secret
-from open2fa.utils import Open2faKey, Open2FA
+from open2fa.utils import Open2FAKey, Open2FA
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +32,10 @@ def _ranstr(n: int) -> str:
 
 @pytest.fixture(scope='function', autouse=True)
 def setenv():
-    """Set the OPEN2FA_KEYDIR environment variable."""
-    os.environ['OPEN2FA_KEYDIR'] = '/tmp/' + _ranstr(10)
+    """Set the OPEN2FA_DIR environment variable."""
+    os.environ['OPEN2FA_DIR'] = '/tmp/' + _ranstr(10)
     yield
-    del os.environ['OPEN2FA_KEYDIR']
+    del os.environ['OPEN2FA_DIR']
 
 
 def test_add_key():
@@ -63,7 +63,7 @@ def test_key_delete():
         main()
     assert 'Deleted key' in fake_out.getvalue()
     assert not osp.isfile(
-        osp.join(os.environ['OPEN2FA_KEYDIR'], orgname + '.key')
+        osp.join(os.environ['OPEN2FA_DIR'], orgname + '.key')
     )
 
 

@@ -8,8 +8,8 @@ import sys
 from time import sleep
 from pathlib import Path
 from logging import getLogger
-from .config import OPEN2FA_KEYDIR
-from .utils import Open2faKey, Open2FA
+from .config import OPEN2FA_DIR
+from .utils import Open2FAKey, Open2FA
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -131,7 +131,7 @@ def main() -> None:
     args.command = args.command.lower()
     repeat = args.repeat if hasattr(args, 'repeat') else None
 
-    Op2FA = Open2FA(os.environ.get('OPEN2FA_KEYDIR') or OPEN2FA_KEYDIR)
+    Op2FA = Open2FA(os.environ.get('OPEN2FA_DIR') or OPEN2FA_DIR)
 
     if args.command.startswith('a'):
         args = _add_ensure_org_secret(args)

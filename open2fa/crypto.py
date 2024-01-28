@@ -1,4 +1,3 @@
-import base64
 import base64 as b64
 import hashlib
 import hmac
@@ -19,27 +18,41 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from logfunc import logf
-
+from pyshared import default_repr
 from open2fa import config
 
 
-def generate_totp_token(secret: str, interval_length: int = 30) -> str:
+class TOTP2FACode:
+    code: str
+    generated_at: float
+    cur_interval: int
+    next_interval_in: float
+    interval_length: int
+
+    def __repr__(self) -> str:
+        return default_repr(self)
+
+
+def generate_totp_2fa_code(
+    secret: str, interval_length: int = 30
+) -> TOTP2FACode:
     """
     Generate a TOTP token using the provided secret key.
     Args:
         secret (str): The base32 encoded secret key.
         interval_length (int): The time step in seconds. Default is 30 seconds.
     Returns:
-        str: A 6-digit TOTP token.
+        A TOTP2FACode object with the generated code as well as other info
     """
 
     # Decode the base32 encoded secret key. Casefold=True allows for
     # lowercase alphabet in the key.
-    key = base64.b32decode(secret, casefold=True)
+    key = b64.b32decode(secret, casefold=True)
 
     # Calculate the number of intervals that have passed since Unix epoch.
     # Time is divided by interval_length to find the current interval.
-    interval = int(time.time()) // interval_length
+    cur_time = time.time()
+    interval = int(cur_time) // interval_length
 
     # Convert the interval into 8-byte big-endian format.
     msg = struct.pack(">Q", interval)
@@ -56,68 +69,29 @@ def generate_totp_token(secret: str, interval_length: int = 30) -> str:
     code = struct.unpack(">I", hmac_digest[o : o + 4])[0] & 0x7FFFFFFF
 
     # The dynamic binary code is then reduced to a 6-digit code and returned.
-    return str(code % 10**6).zfill(6)
+    code = str(code % 10**6).zfill(6)
 
-
-@logf()
-def enc_totp_secret(secret: str | bytes, uid: str):
-    """encrypts a totp secret using the OPEN2FA_ID"""
-    if isinstance(secret, bytes):
-        secret = secret.decode('utf-8')
-
-    return aes_encrypt(secret, uid)
-
-
-@logf()
-def dec_totp_secret(secret: str | bytes, uid: str):
-    """decrypts a totp secret using the OPEN2FA_ID"""
-    if isinstance(secret, bytes):
-        secret = secret.decode('utf-8')
-
-    return aes_decrypt(secret, uid)
-
-
-@logf(level='warning')
-def gen_user_hash(b58_uid: str) -> str:
-    """for a uid str, return 32char trunc sha256 hash that is b58 encoded"""
-    return sha256(b58_uid.encode('utf-8')).hexdigest()[:32]
-
-
-@logf(level='warning')
-def gen_uuid() -> str:
-    """returns the base58-encoded uuid"""
-    return b58enc(uuid.uuid4().bytes).decode()
-
-
-@logf()
-def aes_encrypt(data: str, enc_key: bytes) -> str:
-    enc_key_bytes = base58.b58decode(enc_key)
-
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(data.encode()) + padder.finalize()
-
-    cipher = Cipher(
-        algorithms.AES(enc_key_bytes), modes.ECB(), backend=default_backend()
+    return TOTP2FACode(
+        code=code,
+        generated_at=cur_time,
+        cur_interval=interval,
+        next_interval_in=interval_length - (cur_time % interval_length),
+        interval_length=interval_length,
     )
-    encryptor = cipher.encryptor()
-    enc_data = encryptor.update(padded_data) + encryptor.finalize()
-
-    enc_data = base58.b58encode(enc_data).decode()
-    return enc_data
 
 
-@logf()
-def aes_decrypt(enc_data: str, enc_key: bytes) -> str:
-    enc_key_bytes = base58.b58decode(enc_key)
+def gen_o2fa_id(o2fa_uuid: uuid.UUID | str | bytes) -> str:
+    """Generate a new open2fa identifier for a uuid."""
+    # standardize the uuid input
+    if isinstance(o2fa_uuid, str):
+        o2fa_uuid = uuid.UUID(o2fa_uuid)
 
-    enc_data = base58.b58decode(enc_data)
+    if isinstance(o2fa_uuid, uuid.UUID):
+        o2fa_uuid = o2fa_uuid.bytes
 
-    cipher = Cipher(
-        algorithms.AES(enc_key_bytes), modes.ECB(), backend=default_backend()
-    )
-    decryptor = cipher.decryptor()
-    decrypted_data = decryptor.update(enc_data) + decryptor.finalize()
-
-    unpadder = padding.PKCS7(128).unpadder()
-    unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
-    return unpadded_data.decode()
+    # Generate a sha256 hash of the uuid bytes using a uuid
+    sha256_hash = hmac.new(o2fa_uuid, o2fa_uuid, hashlib.sha256)
+    # truncate the hash to 16 bytes for the o2fa_id
+    o2fa_id = sha256_hash.digest()[:16]
+    # return the base58 encoded o2fa_id string
+    return b58enc(o2fa_id).decode()

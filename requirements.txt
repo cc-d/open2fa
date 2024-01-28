@@ -4,10 +4,11 @@ cryptography
 flake8
 isort
 logfunc==1.9.1
+base58==2.1.1
+pyshared
 pytest
 pytest-cov
 pytest-mock
 requests
 setuptools>=61.0
 twine
-base58==2.1.1

@@ -12,12 +12,12 @@ from .config import (
     INTERVAL,
     OPEN2FA_ID,
     OPEN2FA_KEY_PERMS,
-    OPEN2FA_KEYDIR,
-    OPEN2FA_KEYDIR_PERMS,
+    OPEN2FA_DIR,
+    OPEN2FA_DIR_PERMS,
     OPEN2FA_API_URL,
 )
 from .ex import NoKeyFoundError
-from .crypto import generate_totp_token
+from .crypto import generate_totp_2fa_code, TOTP2FACode
 from .cli_utils import (
     add_secret_key,
     delete_secret_key,
@@ -28,85 +28,51 @@ from .cli_utils import (
 logger = logging.getLogger(__name__)
 
 
-class Open2faKey:
-    def __init__(self, keypath: Path, enc_id: TYPE.Optional[str] = OPEN2FA_ID):
-        keypath = Path(os.path.abspath(keypath))
-        self.keypath = keypath
-        self.name = keypath.stem
-        with open(keypath, 'r') as f:
-            self.secret = f.read().strip()
-            self.censored = f'{self.secret[0]}...{self.secret[-1]}'
-        self.current_token = None
-        self.last_interval = -1
+class Open2FAKey:
+    secret: str
+    name: TYPE.Union[str, None]
+    code: TYPE.Union[TOTP2FACode, None]
 
-        self.enc_totp_secret = None
-        if enc_id is not None:
-            self.enc_totp_secret = enc_totp_secret(self.secret, enc_id)
+    def __init__(self, secret: str, name: str = None):
+        self.secret = secret
+        self.name = name
+        self.code = None
 
-    def generate(self) -> TYPE.Optional[str]:
-        print_token = False
-        cur_interval = int(time.time()) // INTERVAL
-        cur_token = generate_totp_token(self.secret)
-
-        # Only print the token if it is different from the last token
-        # or if the interval has changed or if this is the first token
-        if (
-            self.current_token is None
-            or cur_token != self.current_token
-            or cur_interval > self.last_interval
-        ):
-            self.current_token = cur_token
-            print_token = True
-
-        if print_token:
-            self.last_interval = cur_interval
-            self.last_token = cur_token
-            return self.current_token
-
-        return None
+    def generate_code(self) -> TYPE.Optional[str]:
+        """Generates a TOTP2FACode and returns the code if different"""
+        last_code = self.code
+        self.code = generate_totp_2fa_code(self.secret)
+        if last_code is None:
+            return self.code.code
+        elif self.code.code != last_code.code:
+            return self.code.code
 
     def __repr__(self) -> str:
-        _rstr = '<Open2faKey '
-        for k, v in {
-            'path': self.keypath,
-            'name': self.name,
-            'secret': self.censored,
-            'token': self.current_token,
-            'interval': self.last_interval,
-            'enc_totp_secret': self.enc_totp_secret,
-        }.items():
-            _rstr += f'{k}={v}, '
-        return _rstr[:-2] + '>'
+        return (
+            f'<Open2FAKey: {self.keypath} {self.secret[0:2]}... {self.code}>'
+        )
 
 
 class Open2FA:
-    """Open2fa class for managing TOTP keys in the open2fa directory."""
+    """Open2fa class for managing TOTP keys in the open2fa dir secrets.json"""
 
     def __init__(
         self,
-        open2fa_keydir: TYPE.Union[str, Path] = OPEN2FA_KEYDIR,
+        o2fa_dir: TYPE.Union[str, Path] = OPEN2FA_DIR,
         interval: int = INTERVAL,
         o2fa_id: TYPE.Optional[str] = OPEN2FA_ID,
     ):
-        ensure_open2fa_dir(open2fa_keydir)
-        self.dirpath, self.dirstr = (Path(open2fa_keydir), str(open2fa_keydir))
+        ensure_open2fa_dir(o2fa_dir)
+
+        self.dirpath, self.dirstr = (Path(OPEN2FA_DIR), str(OPEN2FA_DIR))
         self.interval = interval
 
         self.keys = [
-            Open2faKey(keypath)
+            Open2FAKey(keypath)
             for keypath in glob(osp.join(self.dirstr, '*.key'))
         ]
         self.keymap = {key.name: key for key in self.keys}
         self.o2fa_id = o2fa_id
-
-    def __iter__(self):
-        return iter(self.keys)
-
-    def __getitem__(self, org_name: str) -> Open2faKey:
-        for key in self.keys:
-            if key.name == org_name:
-                return key
-        raise NoKeyFoundError(org_name)
 
     def __repr__(self):
         censored_keys = ' '.join([key.censored for key in self.keys])
@@ -126,14 +92,14 @@ class Open2FA:
     def refresh_keys(self) -> None:
         """Refresh the keys in the open2fa directory."""
         self.keys = [
-            Open2faKey(keypath)
+            Open2FAKey(keypath)
             for keypath in glob(osp.join(self.dirstr, '*.key'))
         ]
         self.keymap = {key.name: key for key in self.keys}
 
     def add(
         self, org_name: str, secret: str, ask_overwrite: bool = True
-    ) -> TYPE.Optional[Open2faKey]:
+    ) -> TYPE.Optional[Open2FAKey]:
         """Add a secret key for an organization.
         Args:
             org_name (str): The name of the organization.
@@ -142,7 +108,7 @@ class Open2FA:
                 existing key. If False, overwrite without asking.
                 Defaults to True.
         Returns:
-            Optional[Open2faKey]: The Open2faKey object for the added key.
+            Optional[Open2FAKey]: The Open2FAKey object for the added key.
                 If the key was not added, return None
         """
         if osp.isfile(self._build_keypath(org_name)):
@@ -157,7 +123,7 @@ class Open2FA:
                     return None
 
         keypath = add_secret_key(org_name, secret, self.dirstr)
-        key = Open2faKey(Path(keypath))
+        key = Open2FAKey(Path(keypath))
         self.keys.append(key)
         return key
 

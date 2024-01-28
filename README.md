@@ -6,7 +6,7 @@ As of now (v0.1.0) it is only a basic CLI, but in the future an api, webui, and 
 
 ## File Locations and Environment Variables
 
-**Secret Key Storage**: TOTP secret keys are stored in the directory specified by the `OPEN2FA_KEYDIR` environment variable. By default, this is set to `.open2fa` in the user's home directory, with secure permissions that only allow the user to read and write to/from the directory.
+**Secret Key Storage**: TOTP secret keys are stored in the directory specified by the `OPEN2FA_DIR` environment variable. By default, this is set to `.open2fa` in the user's home directory, with secure permissions that only allow the user to read and write to/from the directory.
 
 ## Installation
 
@@ -33,7 +33,7 @@ pip install 'open2fa[dev]'
    Example Output:
 
    ```
-   Added key: <Open2faKey path=/Users/user/.open2fa/NewOrgName.key, name=NewOrgName, secret=I...E, token=None, interval=-1>
+   Added key: <Open2FAKey path=/Users/user/.open2fa/NewOrgName.key, name=NewOrgName, secret=I...E, token=None, interval=-1>
    ```
 
 2. **Delete a TOTP Secret**:
@@ -64,7 +64,7 @@ pip install 'open2fa[dev]'
 
 4. **Generate 2FA Codes**:
 
-   Generate codes for keys saved in the `OPEN2FA_KEYDIR` directory:
+   Generate codes for keys saved in the `OPEN2FA_DIR` directory:
 
    ```bash
    open2fa generate
@@ -100,8 +100,8 @@ pip install 'open2fa[dev]'
 
 ## How it Works
 
-- **Secret Key Management**: Keys are added, retrieved, or deleted from the `OPEN2FA_KEYDIR`.
-- **Token Generation**: Generates TOTP tokens using the `generate_totp_token` function in `utils.py`, which implements the standard TOTP algorithm.
+- **Secret Key Management**: Keys are added, retrieved, or deleted from the `OPEN2FA_DIR`.
+- **Token Generation**: Generates TOTP tokens using the `generate_totp_2fa_code` function in `utils.py`, which implements the standard TOTP algorithm.
 
 ## Testing
 
