@@ -80,7 +80,22 @@ def generate_totp_2fa_code(
     )
 
 
-def gen_o2fa_id(o2fa_uuid: uuid.UUID | str | bytes) -> str:
+class O2FAUUID:
+    uuid: uuid.UUID | str | bytes
+
+    def __init__(self, uuid: uuid.UUID | str | bytes):
+        """Create a new O2FAUUID object."""
+        # standardize the uuid input
+        if isinstance(uuid, str):
+            uuid = uuid.UUID(uuid)
+
+        if isinstance(uuid, uuid.UUID):
+            uuid = uuid.bytes
+
+        self.uuid = uuid
+
+
+def gen_o2fa_id_and_secret(o2fa_uuid: uuid.UUID | str | bytes) -> str:
     """Generate a new open2fa identifier for a uuid."""
     # standardize the uuid input
     if isinstance(o2fa_uuid, str):

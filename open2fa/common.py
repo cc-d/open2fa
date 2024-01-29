@@ -19,7 +19,7 @@ from open2fa import config
 
 @logf()
 def enc_totp_secret(secret: str | bytes, uid: str):
-    """encrypts a totp secret using the OPEN2FA_ID"""
+    """encrypts a totp secret using the OPEN2FA_UUID"""
     if isinstance(secret, bytes):
         secret = secret.decode('utf-8')
 
@@ -28,7 +28,7 @@ def enc_totp_secret(secret: str | bytes, uid: str):
 
 @logf()
 def dec_totp_secret(secret: str | bytes, uid: str):
-    """decrypts a totp secret using the OPEN2FA_ID"""
+    """decrypts a totp secret using the OPEN2FA_UUID"""
     if isinstance(secret, bytes):
         secret = secret.decode('utf-8')
 

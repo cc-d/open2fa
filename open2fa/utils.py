@@ -3,14 +3,18 @@ import os
 import os.path as osp
 import sys
 import time
+import json
 import typing as TYPE
+from hashlib import sha256
 from glob import glob
 from pathlib import Path
+from uuid import uuid4, UUID
+from base58 import b58encode, b58decode
 from .common import gen_uuid, enc_totp_secret, dec_totp_secret
 from .cli_config import MSGS
 from .config import (
     INTERVAL,
-    OPEN2FA_ID,
+    OPEN2FA_UUID,
     OPEN2FA_KEY_PERMS,
     OPEN2FA_DIR,
     OPEN2FA_DIR_PERMS,
@@ -19,11 +23,12 @@ from .config import (
 from .ex import NoKeyFoundError
 from .crypto import generate_totp_2fa_code, TOTP2FACode
 from .cli_utils import (
-    add_secret_key,
     delete_secret_key,
     ensure_open2fa_dir,
     get_secret_key,
+    ensure_secrets_json,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +65,12 @@ class Open2FA:
         self,
         o2fa_dir: TYPE.Union[str, Path] = OPEN2FA_DIR,
         interval: int = INTERVAL,
-        o2fa_id: TYPE.Optional[str] = OPEN2FA_ID,
+        o2fa_id: TYPE.Optional[str] = OPEN2FA_UUID,
     ):
         ensure_open2fa_dir(o2fa_dir)
+        ensure_secrets_json(o2fa_dir)
 
-        self.dirpath, self.dirstr = (Path(OPEN2FA_DIR), str(OPEN2FA_DIR))
+        self.dirpath, self.dirstr = (Path(o2fa_dir), str(o2fa_dir))
         self.interval = interval
 
         self.keys = [
@@ -175,17 +181,17 @@ class Open2FA:
 
     def cli_init(self) -> None:
         """Initialize the open2fa directory and key file."""
-        if OPEN2FA_ID is not None:
+        if OPEN2FA_UUID is not None:
             logger.info(
-                f"OPEN2FA_ID is set. Skipping creation of '{OPEN2FA_ID}'"
+                f"OPEN2FA_UUID is set. Skipping creation of '{OPEN2FA_UUID}'"
             )
-            new_uuid = OPEN2FA_ID
+            new_uuid = OPEN2FA_UUID
         else:
             new_uuid = gen_uuid()
-            with open(self.dirpath / 'open2fa.id', 'w') as f:
+            with open(self.dirpath / 'open2fa.uuid', 'w') as f:
                 f.write(new_uuid)
 
-        logger.info(f'NEW OPEN2FA_ID: {new_uuid}')
+        logger.info(f'NEW OPEN2FA_UUID: {new_uuid}')
 
         # implement sync logic here
         # for key in self.keys:

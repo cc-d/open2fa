@@ -135,8 +135,8 @@ def test_enc_dec_totp_secret():
 
 
 def test_config_uid():
-    """Test the OPEN2FA_ID config variable."""
-    with patch('open2fa.config.OPEN2FA_ID', None):
+    """Test the OPEN2FA_UUID config variable."""
+    with patch('open2fa.config.OPEN2FA_UUID', None):
         sys.argv = ['open2fa', 'init']
         from open2fa.cli import main
 

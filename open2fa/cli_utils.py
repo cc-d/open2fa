@@ -11,7 +11,7 @@ from .common import gen_uuid, enc_totp_secret, dec_totp_secret
 from .cli_config import MSGS
 from .config import (
     INTERVAL,
-    OPEN2FA_ID,
+    OPEN2FA_UUID,
     OPEN2FA_KEY_PERMS,
     OPEN2FA_DIR,
     OPEN2FA_DIR_PERMS,
@@ -56,7 +56,7 @@ def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json'):
     if not osp.isfile(key_json_path):
         logger.info(f"Creating secrets.json file at '{key_json_path}'")
         with open(key_json_path, 'w') as f:
-            json.dump({}, f)
+            f.write(json.dumps({'keys': [], 'uuid':
         logger.info(
             f"Setting secrets.json file permissions to {OPEN2FA_KEY_PERMS}"
         )
@@ -67,24 +67,7 @@ def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json'):
         os.chown(key_json_path, os.getuid(), os.getgid())
     return key_json_path
 
-
-def get_secret_key(org_name: str, open2fa_dir: str = OPEN2FA_DIR) -> str:
-    """Retrieve the secret key for an organization from the open2fa dir if
-    it exists.
-    Args:
-        org_name (str): The name of the organization.
-        open2fa_dir (str): Path to the open2fa directory.
-            Defaults to config.OPEN2FA_DIR.
-    Returns:
-        Optional[str]: The base32 encoded secret key for the organization if
-        available. Otherwise, None.
-    """
-    key_path = Path(osp.join(open2fa_dir, f'{org_name}.key'))
-    if key_path.is_file():
-        logger.debug(f"Found key file '{key_path}'")
-        with open(key_path, 'r') as f:
-            return f.read().strip()
-    return None
+def read_secrets()
 
 
 def delete_secret_key(org_name: str, open2fa_dir: str = OPEN2FA_DIR) -> bool:
