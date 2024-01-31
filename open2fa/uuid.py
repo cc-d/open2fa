@@ -16,6 +16,7 @@ from pyshared import default_repr
 class O2FASecret:
     secret: bytes
     iv: bytes
+    b58: str
 
     def __init__(self, sha256_hash_bytes: bytes, iv=b'0123456789abcdef'):
         """Create a new O2FASecret objet.
@@ -28,12 +29,11 @@ class O2FASecret:
             O2FASecret: the new O2FASecret object
         """
         self.secret = sha256_hash_bytes
+        self.b58 = b58encode(self.secret).decode()
         self.iv = iv
 
     def __repr__(self) -> str:
-        return "O2FASecret(secret=b'{}', iv={})".format(
-            b58encode(self.secret).decode(), self.iv
-        )
+        return default_repr(self)
 
     def encrypt(self, plaintext: str) -> str:
         """Encrypt the plaintext using the secret and iv.
@@ -53,7 +53,7 @@ class O2FASecret:
             padder.update(plaintext.encode()) + padder.finalize()
         )
         ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
-        return b64.b64encode(ciphertext).decode()
+        return b58encode(ciphertext).decode()
 
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt the ciphertext using the secret and iv.
@@ -70,8 +70,7 @@ class O2FASecret:
         decryptor = cipher.decryptor()
         unpadder = PKCS7(128).unpadder()
         padded_plaintext = (
-            decryptor.update(b64.b64decode(ciphertext.encode()))
-            + decryptor.finalize()
+            decryptor.update(b58decode(ciphertext)) + decryptor.finalize()
         )
         plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
         return plaintext.decode()
