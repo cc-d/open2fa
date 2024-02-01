@@ -10,6 +10,7 @@ from pathlib import Path
 from logging import getLogger
 from .main import Open2FA
 from . import msgs as MSGS
+from pyshared import truncstr
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -105,11 +106,35 @@ def main() -> None:
         print(MSGS.SECRET_ADDED.format(new_secret))
     # gen
     elif args.command.startswith('g'):
-        print(Op2FA.generate_codes())
+        cols = ['Name', 'Code', 'Next Code In']
+        sys.stdout.write('\t\t'.join(cols) + '\n')
+        sys.stdout.write('\t\t'.join(['-' * len(c) for c in cols]) + '\n')
+
+        prev_lines = 0
+        while True:
+            buffer = []
+            for c in Op2FA.generate_codes():
+                buffer.append(
+                    '%s\t\t%s\t\t%.2f'
+                    % (c.name, c.code.code, c.code.next_interval_in)
+                )
+
+            # Clear the previous output
+            sys.stdout.write('\033[F' * prev_lines)
+
+            # Store the number of lines in the current buffer
+            prev_lines = len(buffer)
+
+            # Write the current buffer
+            sys.stdout.write('\n'.join(buffer) + '\n')
+            sys.stdout.flush()
+            sleep(0.5)
     # list
     elif args.command.startswith('l'):
+        print('\t\t'.join(['Name', 'Secret']))
+        print('\t\t'.join(['-' * len(c) for c in ['Name', 'Secret']]))
         for s in Op2FA.secrets:
-            print(MSGS.SECRET_LIST_SECRET.format(s.name, s.secret))
+            print('%s\t\t%s' % (s.name, truncstr(s.secret, start_chars=1, end_chars=1)))
 
     # delete
     elif args.command.startswith('d'):

@@ -57,43 +57,22 @@ pip install 'open2fa[dev]'
    Example Output:
 
    ```
-   Org Name             Secret      Key Path
-   NewOrgName           N...E       /Users/user/.open2fa/NewOrgName.key
-   AnotherOrg           A...Z       /Users/user/.open2fa/AnotherOrg.key
+   Name            Secret
+   ----            ------
+   None            I...E
+   pypi            A...B
    ```
 
 4. **Generate 2FA Codes**:
 
-   Generate codes for keys saved in the `OPEN2FA_DIR` directory:
+   Generate codes for keys saved in `OPEN2FA_DIR/secrets.json`:
 
    ```bash
    open2fa generate
-
-   <<< GENERATED 5 CODES >>>
-
-   test2: 361070
-
-   test3: 361070
-
-   test: 393705
-
-   testorg: 393705
-
-   pypi: 214272
-   ```
-
-   **Generate 2FA code for a specific org**:
-
-   ```bash
-   open2fa generate [org_name]
-   ```
-
-   Example Output:
-
-   ```
-   <<< GENERATED 1 CODE >>>
-
-   NewOrgName: 123456
+   Name            Code            Next Code In
+   ----            ----            -------------
+   None            866564          25.36
+   pypi            066838          25.36
    ```
 
    Tokens will continue to be generated until the user exits the program with `Ctrl+C`.

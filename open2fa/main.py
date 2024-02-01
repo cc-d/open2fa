@@ -82,13 +82,14 @@ class Open2FA:
             name (str, optional): the name of the secret to generate a code for
                 if excluded, codes for all secrets will be generated
         Yields:
-            str: the TOTP 2FA code
+            Generator[TOTPSecret, None, None]: the TOTPSecret object[s]
         """
+        prev_code = None
         for s in self.secrets:
             prev_code = s.code.code
             s.generate_code()
-            if s.code != prev_code:
-                yield s.code
+            if name is None or s.name == name:
+                yield s
 
     def write_secrets(self) -> None:
         """Write the secrets to the secrets.json file."""

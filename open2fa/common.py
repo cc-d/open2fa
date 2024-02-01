@@ -105,13 +105,14 @@ class O2FAUUID:
 class TOTPSecret:
     secret: str
     name: str
+    code: TOTP2FACode
 
     def __init__(self, secret: str, name: str):
         self.secret = secret
         self.name = name
         self.code = generate_totp_2fa_code(self.secret)
 
-    def generate_code(self) -> TYPE.Union[str, None]:
+    def generate_code(self) -> TYPE.Union[TOTP2FACode, None]:
         """Returns 2FA code if new code avaliable else None"""
         prev_code = self.code
         self.code = generate_totp_2fa_code(self.secret)
