@@ -1,81 +1,116 @@
-import base64
+import typing as TYPE
+from uuid import uuid4, UUID
+from hashlib import sha256
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
+from cryptography.hazmat.backends import default_backend
+from .totp import generate_totp_2fa_code, TOTP2FACode
+from time import time
+from base58 import b58encode, b58decode
 import base64 as b64
 import os
-import uuid
-from hashlib import sha256
-from typing import Optional as Opt
-
-import base58
-from base58 import b58decode as b58dec
-from base58 import b58encode as b58enc
-from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from logfunc import logf
-
-from open2fa import config
+import os.path as osp
+from pyshared import default_repr
 
 
-@logf()
-def enc_totp_secret(secret: str | bytes, uid: str):
-    """encrypts a totp secret using the OPEN2FA_UUID"""
-    if isinstance(secret, bytes):
-        secret = secret.decode('utf-8')
+class RemoteSecret:
+    secret: bytes
+    iv: bytes
+    b58: str
 
-    return aes_encrypt(secret, uid)
+    def __init__(self, sha256_hash_bytes: bytes, iv=b'0123456789abcdef'):
+        """Create a new O2FASecret objet.
+        Args:
+            sha256_hash_bytes (bytes): the last 16 bytes of the sha256 hash of
+                the o2fa uuid
+            iv (bytes): the initialization vector
+                Default: b'0123456789abcdef'
+        Returns:
+            O2FASecret: the new O2FASecret object
+        """
+        self.secret = sha256_hash_bytes
+        self.b58 = b58encode(self.secret).decode()
+        self.iv = iv
+
+    def __repr__(self) -> str:
+        return default_repr(self)
+
+    def encrypt(self, plaintext: str) -> str:
+        """Encrypt the plaintext using the secret and iv.
+        Args:
+            plaintext (str): the plaintext to encrypt
+        Returns:
+            str: the encrypted ciphertext
+        """
+        cipher = Cipher(
+            algorithms.AES(self.secret),
+            modes.CBC(self.iv),
+            backend=default_backend(),
+        )
+        encryptor = cipher.encryptor()
+        padder = PKCS7(128).padder()
+        padded_plaintext = (
+            padder.update(plaintext.encode()) + padder.finalize()
+        )
+        ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
+        return b58encode(ciphertext).decode()
+
+    def decrypt(self, ciphertext: str) -> str:
+        """Decrypt the ciphertext using the secret and iv.
+        Args:
+            ciphertext (str): the ciphertext to decrypt
+        Returns:
+            str: the decrypted plaintext
+        """
+        cipher = Cipher(
+            algorithms.AES(self.secret),
+            modes.CBC(self.iv),
+            backend=default_backend(),
+        )
+        decryptor = cipher.decryptor()
+        unpadder = PKCS7(128).unpadder()
+        padded_plaintext = (
+            decryptor.update(b58decode(ciphertext)) + decryptor.finalize()
+        )
+        plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
+        return plaintext.decode()
 
 
-@logf()
-def dec_totp_secret(secret: str | bytes, uid: str):
-    """decrypts a totp secret using the OPEN2FA_UUID"""
-    if isinstance(secret, bytes):
-        secret = secret.decode('utf-8')
+class O2FAUUID:
+    uuid: UUID
+    o2fa_id: str
+    secret: RemoteSecret
 
-    return aes_decrypt(secret, uid)
+    def __init__(self, uuid: UUID | str | bytes):
+        """Create a new O2FAUUID object."""
+        # standardize the uuid input
+        if isinstance(uuid, str):
+            uuid = UUID(uuid)
 
+        if isinstance(uuid, UUID):
+            uuid = uuid.bytes
 
-@logf(level='warning')
-def gen_user_hash(b58_uid: str) -> str:
-    """for a uid str, return 32char trunc sha256 hash that is b58 encoded"""
-    return sha256(b58_uid.encode('utf-8')).hexdigest()[:32]
+        # generate the secret
+        self.uuid = UUID(bytes=uuid)
+        self.sha256 = sha256(self.uuid.bytes).digest()
+        self.o2fa_id = b58encode(self.sha256[:16]).decode()
+        self.secret = RemoteSecret(self.sha256[16:])
 
-
-@logf(level='warning')
-def gen_uuid() -> str:
-    """returns the base58-encoded uuid"""
-    return b58enc(uuid.uuid4().bytes).decode()
-
-
-@logf()
-def aes_encrypt(data: str, enc_key: bytes) -> str:
-    enc_key_bytes = base58.b58decode(enc_key)
-
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(data.encode()) + padder.finalize()
-
-    cipher = Cipher(
-        algorithms.AES(enc_key_bytes), modes.ECB(), backend=default_backend()
-    )
-    encryptor = cipher.encryptor()
-    enc_data = encryptor.update(padded_data) + encryptor.finalize()
-
-    enc_data = base58.b58encode(enc_data).decode()
-    return enc_data
+    def __repr__(self) -> str:
+        return "O2FAUUID(uuid={}, o2fa_id=b'{}', secret={})".format(
+            repr(self.uuid), self.o2fa_id, self.secret
+        )
 
 
-@logf()
-def aes_decrypt(enc_data: str, enc_key: bytes) -> str:
-    enc_key_bytes = base58.b58decode(enc_key)
+class TOTPSecret:
+    secret: str
+    name: str
 
-    enc_data = base58.b58decode(enc_data)
+    def __init__(self, secret: str, name: str):
+        self.secret = secret
+        self.name = name
 
-    cipher = Cipher(
-        algorithms.AES(enc_key_bytes), modes.ECB(), backend=default_backend()
-    )
-    decryptor = cipher.decryptor()
-    decrypted_data = decryptor.update(enc_data) + decryptor.finalize()
-
-    unpadder = padding.PKCS7(128).unpadder()
-    unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
-    return unpadded_data.decode()
+    def generate_code(self) -> TOTP2FACode:
+        """Generate a TOTP code for the secret."""
+        self.totp_2fa_code = generate_totp_2fa_code(self.secret)
+        return self.totp_2fa_code

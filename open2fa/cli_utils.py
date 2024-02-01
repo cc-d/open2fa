@@ -7,8 +7,6 @@ import typing as TYPE
 import json
 from glob import glob
 from pathlib import Path
-from .common import gen_uuid, enc_totp_secret, dec_totp_secret
-from .cli_config import MSGS
 from .config import (
     INTERVAL,
     OPEN2FA_UUID,
@@ -17,7 +15,7 @@ from .config import (
     OPEN2FA_DIR_PERMS,
     OPEN2FA_API_URL,
 )
-from .ex import NoKeyFoundError
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ def ensure_open2fa_dir(dirpath: str):
     return dirpath
 
 
-def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json'):
+def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json') -> str:
     """Ensure the secrets.json file exists in the open2fa directory.
     Args:
         key_json_path (str): Path to the secrets.json file.
@@ -56,7 +54,7 @@ def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json'):
     if not osp.isfile(key_json_path):
         logger.info(f"Creating secrets.json file at '{key_json_path}'")
         with open(key_json_path, 'w') as f:
-            f.write(json.dumps({'keys': [], 'uuid':
+            f.write(json.dumps({'secrets': []}))
         logger.info(
             f"Setting secrets.json file permissions to {OPEN2FA_KEY_PERMS}"
         )
@@ -67,22 +65,15 @@ def ensure_secrets_json(o2fa_dir: str, filename: str = 'secrets.json'):
         os.chown(key_json_path, os.getuid(), os.getgid())
     return key_json_path
 
-def read_secrets()
 
-
-def delete_secret_key(org_name: str, open2fa_dir: str = OPEN2FA_DIR) -> bool:
-    """Delete the secret key for an organization from the open2fa dir if
-    it exists.
+def read_secrets_json(o2fa_dir: str, filename: str = 'secrets.json') -> dict:
+    """Read the secrets.json file and return the contents.
     Args:
-        org_name (str): The name of the organization.
+        o2fa_dir (str): Path to the open2fa directory.
+        filename (str): The name of the secrets.json file.
     Returns:
-        Optional[bool]: True if the key was deleted, False otherwise.
-
+        TYPE.Dict: The contents of the secrets.json file.
     """
-    key_path = osp.join(open2fa_dir, f'{org_name}.key')
-    if osp.isfile(key_path):
-        logger.info(f"Deleting key file '{key_path}'")
-        os.remove(key_path)
-        return True
-    logger.warning(f"No key file found for '{org_name}'")
-    return False
+    key_json_path = ensure_secrets_json(o2fa_dir, filename)
+    with open(key_json_path, 'r') as f:
+        return json.load(f)
