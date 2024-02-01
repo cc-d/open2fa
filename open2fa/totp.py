@@ -16,6 +16,10 @@ class TOTP2FACode:
     interval_length: int
     next_code_at: float
 
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def __repr__(self) -> str:
         return default_repr(self)
 

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from open2fa.cli_config import MSGS
+from open2fa.msgs import MSGS
 from open2fa.common import enc_totp_secret, dec_totp_secret
 from open2fa.utils import Open2FAKey, Open2FA
 

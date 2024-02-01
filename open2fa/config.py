@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-OPEN2FA_DIR = os.environ.get('OPEN2FA_DIR', Path.home() / '.open2fa')
+OPEN2FA_DIR = str(os.environ.get('OPEN2FA_DIR', Path.home() / '.open2fa'))
 
 OPEN2FA_UUID = os.environ.get('OPEN2FA_UUID', None)
 if OPEN2FA_UUID is None and os.path.exists(

@@ -1,3 +1,4 @@
-KEY_ADDED = "Added key: {newkey}"
-KEY_DELETED = "Deleted key for '{org_name}'"
-KEY_LIST_KEY = "[{name}]\t{key}"
+SECRET_ADDED = 'Added key: {}'
+SECRET_DELETED = 'Deleted key for {}'
+SECRET_LIST_SECRET = '[{}]\t{}'
+SECRET_NOT_ADDED = 'Key not added.'

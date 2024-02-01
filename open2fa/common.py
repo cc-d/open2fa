@@ -109,8 +109,19 @@ class TOTPSecret:
     def __init__(self, secret: str, name: str):
         self.secret = secret
         self.name = name
+        self.code = generate_totp_2fa_code(self.secret)
 
-    def generate_code(self) -> TOTP2FACode:
-        """Generate a TOTP code for the secret."""
-        self.totp_2fa_code = generate_totp_2fa_code(self.secret)
-        return self.totp_2fa_code
+    def generate_code(self) -> TYPE.Union[str, None]:
+        """Returns 2FA code if new code avaliable else None"""
+        prev_code = self.code
+        self.code = generate_totp_2fa_code(self.secret)
+        if self.code.code != prev_code.code:
+            return self.code
+
+    def __repr__(self) -> str:
+        return default_repr(
+            self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '
+        )
+
+    def json(self) -> dict:
+        return {'secret': self.secret, 'name': self.name}

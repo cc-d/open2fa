@@ -8,8 +8,8 @@ import sys
 from time import sleep
 from pathlib import Path
 from logging import getLogger
-from .config import OPEN2FA_DIR
-from .utils import Open2FAKey, Open2FA
+from .main import Open2FA
+from . import msgs as MSGS
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -47,10 +47,10 @@ def parse_args() -> argparse.Namespace:
         help='Add a new TOTP secret key for an organization',
     )
     parser_add.add_argument(
-        'org_name', type=str, help='Name of the organization', nargs='?'
+        'secret', type=str, help='The TOTP secret key', nargs='?'
     )
     parser_add.add_argument(
-        'secret', type=str, help='The TOTP secret key', nargs='?'
+        'name', type=str, help='Name of the secret', nargs='?'
     )
 
     # Delete command
@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
         help='Delete a TOTP secret key for an organization',
     )
     parser_delete.add_argument(
-        'org_name', type=str, help='Name of the organization', nargs='?'
+        'name', type=str, help='Name of the secret to delete', nargs='?'
     )
 
     # Generate command
@@ -70,14 +70,17 @@ def parse_args() -> argparse.Namespace:
         help='Generate a TOTP code for an organization',
     )
     parser_generate.add_argument(
-        'org_name', type=str, help='Name of the organization', nargs='?'
+        'name',
+        type=str,
+        help='Name of the secret to generate codes for',
+        nargs='?',
     )
     parser_generate.add_argument(
         '--repeat',
         '-r',
         dest='repeat',
         type=int,
-        help='How many times to repeat the code generation?',
+        help='Repeatedly try to generate codes',
         nargs='?',
     )
 
@@ -86,91 +89,34 @@ def parse_args() -> argparse.Namespace:
         'list', aliases=['l', '-l', '--list'], help='List TOTP keys'
     )
     parser_list.add_argument(
-        'org_name',
-        type=str,
-        help='Name of the organization or its prefix',
-        nargs='?',
-    )
-
-    # Init command
-    parser_init = subparsers.add_parser(
-        'init',
-        aliases=['i', '-i', '--init'],
-        help='Initialize open2fa cli to work with remote api',
+        'name', type=str, help='Only list keys matching this name', nargs='?'
     )
 
     return parser.parse_args()
 
 
-def _add_ensure_org_secret(args: argparse.Namespace) -> argparse.Namespace:
-    """Ensure that both the org_name and secret args are present. If not,
-    prompt the user for the missing argument(s).
-    """
-    # 0/2 args present
-    if not args.secret and not args.org_name:
-        args.org_name = input("Enter Organization name: ")
-        args.secret = input("Enter Secret key: ")
-    # 1/2 args present
-    if not args.secret or not args.org_name:
-        print('BOTH org_name and secret must be specified.')
-        sys.exit(1)
-    return args
-
-
-def _print_gend_tokens(gend: TYPE.Dict[str, str]) -> None:
-    """Print the generated tokens."""
-    if len(gend) <= 0:
-        return
-    print(f'\n<<< Generated {len(gend)} codes >>>\n\n'.upper())
-    for name, code in gend.items():
-        print(f'{name}: {code}\n')
-
-
 def main() -> None:
     args = parse_args()
     args.command = args.command.lower()
-    repeat = args.repeat if hasattr(args, 'repeat') else None
 
-    Op2FA = Open2FA(os.environ.get('OPEN2FA_DIR') or OPEN2FA_DIR)
-
+    Op2FA = Open2FA()
     if args.command.startswith('a'):
-        args = _add_ensure_org_secret(args)
-        newkey = Op2FA.add(args.org_name, args.secret, ask_overwrite=True)
-        print(f"Added key: {newkey}") if newkey else print(f"Key not added.")
+        new_secret = Op2FA.add_secret(args.secret, args.name)
+        print(MSGS.SECRET_ADDED.format(new_secret))
     # gen
     elif args.command.startswith('g'):
-        while True:
-            gend = Op2FA.generate(args.org_name)
-            _print_gend_tokens(gend)
-
-            # only $x codes were requested
-            if repeat is not None:
-                repeat -= 1
-                if repeat == 0:
-                    break
-            sleep(0.5)
+        print(Op2FA.generate_codes())
     # list
     elif args.command.startswith('l'):
-        Op2FA.print_keys()
+        for s in Op2FA.secrets:
+            print(MSGS.SECRET_LIST_SECRET.format(s.name, s.secret))
 
     # delete
     elif args.command.startswith('d'):
-        if not args.org_name:
+        if not args.name:
             print("Must specify an organization name to delete.")
             sys.exit(1)
-        if Op2FA.delete(args.org_name):
-            print(f"Deleted key for '{args.org_name}'")
-        else:
-            print(f"Key for '{args.org_name}' not found.")
-            sys.exit(1)
-
-    # init
-    elif args.command.startswith('i'):
-        if hasattr(Op2FA, 'o2fa_id') and Op2FA.o2fa_id:
-            # print('Already initialized.', Op2FA.o2fa_id[0:2] + '...')
-            # sys.exit(1)
-            pass
-        Op2FA.cli_init()
+        print(Op2FA.remove_secret(args.name), 'secret(s) removed.')
 
 
 if __name__ == "__main__":
