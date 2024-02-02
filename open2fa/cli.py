@@ -117,10 +117,9 @@ def main() -> None:
     if args.command.startswith('a'):
         new_secret = Op2FA.add_secret(args.secret, args.name)
         print(
-            MSGS.SECRET_ADDED.format(
-                'name: {} | secret: {}'.format(
-                    new_secret.name, sec_trunc(new_secret.secret)
-                )
+            '\n'
+            + MSGS.SECRET_ADDED.format(
+                '{} {}\n'.format(new_secret.name, sec_trunc(new_secret.secret))
             )
         )
     # gen

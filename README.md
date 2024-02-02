@@ -27,13 +27,13 @@ pip install 'open2fa[dev]'
 1. **Add a TOTP Secret**:
 
    ```bash
-   open2fa add [org_name] [secret]
+   open2fa add secret -n aTESTTESTTESTTESTTESTTEST334434
    ```
 
    Example Output:
 
    ```
-   Added key: <Open2FAKey path=/Users/user/.open2fa/NewOrgName.key, name=NewOrgName, secret=I...E, token=None, interval=-1>
+   Added secret: aTESTTESTTESTTESTTESTTEST334434 I...E
    ```
 
 2. **Delete a TOTP Secret**:
