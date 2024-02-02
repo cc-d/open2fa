@@ -114,6 +114,45 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
+    """Infinite code generation loop."""
+    longest = max([len(str(s.name)) for s in op2fa.secrets])
+
+    cols = ['Name'.ljust(longest), 'Code  ', 'Next Code']
+
+    sys.stdout.write('\n%s    %s    %s' % (cols[0], cols[1], cols[2]) + '\n')
+    sys.stdout.write('    '.join(['-' * len(str(c)) for c in cols]) + '\n')
+
+    prev_lines = 0
+    while True:
+        buffer = []
+        for c in op2fa.generate_codes():
+            buffer.append(
+                '%s    %s    %s'
+                % (
+                    str(c.name).ljust(longest),
+                    c.code.code,
+                    '%.2f' % c.code.next_interval_in,
+                )
+            )
+
+        # Clear the previous output
+        sys.stdout.write('\033[F' * prev_lines)
+
+        # Store the number of lines in the current buffer
+        prev_lines = len(buffer) + 1
+
+        # Write the current buffer
+        sys.stdout.write('\n'.join(buffer) + '\n\n')
+        sys.stdout.flush()
+
+        if repeat is not None:
+            repeat -= 1
+            if repeat <= 0:
+                break
+        sleep(0.25)
+
+
 def main() -> None:
     args = parse_args()
     args.command = args.command.lower()
@@ -129,43 +168,7 @@ def main() -> None:
         )
     # gen
     elif args.command.startswith('g'):
-        longest = max([len(str(s.name)) for s in Op2FA.secrets])
-
-        cols = ['Name'.ljust(longest), 'Code  ', 'Next Code']
-
-        sys.stdout.write(
-            '\n%s    %s    %s' % (cols[0], cols[1], cols[2]) + '\n'
-        )
-        sys.stdout.write('    '.join(['-' * len(str(c)) for c in cols]) + '\n')
-
-        prev_lines = 0
-        while True:
-            buffer = []
-            for c in Op2FA.generate_codes():
-                buffer.append(
-                    '%s    %s    %s'
-                    % (
-                        str(c.name).ljust(longest),
-                        c.code.code,
-                        '%.2f' % c.code.next_interval_in,
-                    )
-                )
-
-            # Clear the previous output
-            sys.stdout.write('\033[F' * prev_lines)
-
-            # Store the number of lines in the current buffer
-            prev_lines = len(buffer) + 1
-
-            # Write the current buffer
-            sys.stdout.write('\n'.join(buffer) + '\n\n')
-            sys.stdout.flush()
-
-            if args.repeat is not None:
-                args.repeat -= 1
-                if args.repeat <= 0:
-                    break
-            sleep(0.25)
+        code_gen(Op2FA, args.repeat)
     # list
     elif args.command.startswith('l'):
         longest_name = max([len(str(s.name)) for s in Op2FA.secrets])
