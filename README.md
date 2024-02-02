@@ -33,13 +33,16 @@ pip install 'open2fa[dev]'
    Example Output:
 
    ```
-   Added secret: aTESTTESTTESTTESTTESTTEST334434 I...E
+   Added secret: aTESTTESTTESTTESTTESTTEST334434 I65VU7K5ZQL7WB4E
    ```
 
 2. **Delete a TOTP Secret**:
 
    ```bash
-   open2fa delete [name?] [secret?]
+   py3 -m open2fa.cli d aTESTTESTTESTTESTTESTTEST
+
+   Are you sure you want to remove aTESTTESTTESTTESTTESTTEST I65VU7K5ZQL7WB4E? (y/n): y
+   Deleted 1 secret(s).
    ```
 
    Example Output:

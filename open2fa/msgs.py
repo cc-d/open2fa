@@ -19,3 +19,7 @@ INIT_FAIL = 'Remote initialization cancelled.'
 
 DEL_NO_NAME_SECRET = 'No secret OR name provided to delete.'
 DEL_SUCCESS = 'Deleted {} secret(s).'
+
+ADD_ALREADY_EXISTS = (
+    'Secret {} already exists with name {}, overwriting? (y/n): '
+)

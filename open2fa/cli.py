@@ -144,6 +144,7 @@ def parse_args() -> argparse.Namespace:
         help='Pull secrets from remote',
         aliases=['pul', '-pul', '--pull'],
     )
+
     return parser.parse_args()
 
 
@@ -203,6 +204,7 @@ def handle_remote_init():
         if user_response.lower() == 'y':
             # Generate new UUID and write to file
             new_uuid = str(uuid.uuid4())
+            print(uuid_file_path, '@' * 100)
             with open(uuid_file_path, 'w') as uuid_file:
                 uuid_file.write(new_uuid)
             os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)

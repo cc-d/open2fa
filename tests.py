@@ -4,6 +4,7 @@ from unittest.mock import patch
 import sys
 import os
 from open2fa.main import Open2FA
+from open2fa.utils import apireq
 
 # Assuming ranstr function exists for generating random strings
 from pyshared import ranstr

@@ -62,3 +62,8 @@ def apireq(
     if resp.status_code != 200:
         raise EX.RemoteError('{} {}'.format(resp.status_code, resp.text))
     return resp
+
+
+def input_confirm(prompt: str) -> bool:
+    """Prompt user for confirmation."""
+    return input(prompt).lower().strip().startswith('y')

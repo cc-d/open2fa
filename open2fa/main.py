@@ -18,7 +18,7 @@ from .cli_utils import (
 )
 from .common import O2FAUUID, RemoteSecret, TOTPSecret
 from .totp import TOTP2FACode, generate_totp_2fa_code
-from .utils import ApiResponse, apireq, sec_trunc
+from .utils import ApiResponse, apireq, sec_trunc, input_confirm
 
 
 class Open2FA:
@@ -96,13 +96,7 @@ class Open2FA:
                 if force:
                     continue
 
-                if (
-                    input(
-                        MSGS.CONFIRM_REMOVE.format(s.name, sec_trunc(s.secret))
-                    )
-                    .lower()
-                    .startswith('y')
-                ):
+                if input_confirm(MSGS.CONFIRM_REMOVE.format(s.name, s.secret)):
                     continue
 
             new_secrets.append(s)
