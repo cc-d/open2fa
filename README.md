@@ -39,7 +39,7 @@ pip install 'open2fa[dev]'
 2. **Delete a TOTP Secret**:
 
    ```bash
-   open2fa delete [org_name]
+   open2fa delete [name?] [secret?]
    ```
 
    Example Output:
