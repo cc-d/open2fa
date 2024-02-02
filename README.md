@@ -57,10 +57,13 @@ pip install 'open2fa[dev]'
    Example Output:
 
    ```
-   Name            Secret
-   ----            ------
-   None            I...E
-   pypi            A...B
+   Name                            Secret
+   -------------------------       -----
+   aTESTTESTTESTTESTTESTTEST       I...E
+   None                            I...E
+   pypi                            A...B
+   TESTTESTTESTTESTTESTTEST        I...E
+   TESTTESTTESTTESTTESTTEST2       I...E
    ```
 
 4. **Generate 2FA Codes**:
@@ -69,10 +72,13 @@ pip install 'open2fa[dev]'
 
    ```bash
    open2fa generate
-   Name            Code            Next Code In
-   ----            ----            -------------
-   None            866564          25.36
-   pypi            066838          25.36
+   Name                         Code      Next Code
+   -------------------------    ------    ---------
+   aTESTTESTTESTTESTTESTTEST    490992    2.620
+   None                         490992    2.620
+   pypi                         216241    2.620
+   TESTTESTTESTTESTTESTTEST     490992    2.620
+   TESTTESTTESTTESTTESTTEST2    490992    2.620
    ```
 
    Tokens will continue to be generated until the user exits the program with `Ctrl+C`.

@@ -10,7 +10,7 @@ from pathlib import Path
 from logging import getLogger
 from .main import Open2FA
 from . import msgs as MSGS
-from pyshared import truncstr
+from .utils import sec_trunc
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -50,8 +50,9 @@ def parse_args() -> argparse.Namespace:
     parser_add.add_argument(
         'secret', type=str, help='The TOTP secret key', nargs='?'
     )
+    # Name as an optional argument
     parser_add.add_argument(
-        'name', type=str, help='Name of the secret', nargs='?'
+        '--name', '-n', type=str, help='Name of the secret', dest='name'
     )
 
     # Delete command
@@ -59,6 +60,12 @@ def parse_args() -> argparse.Namespace:
         'delete',
         aliases=['d', '-d', '--delete'],
         help='Delete a TOTP secret key for an organization',
+    )
+    parser_delete.add_argument(
+        'secret',
+        type=str,
+        help='Entire or partial secret to delete',
+        nargs='?',
     )
     parser_delete.add_argument(
         'name', type=str, help='Name of the secret to delete', nargs='?'
@@ -81,7 +88,7 @@ def parse_args() -> argparse.Namespace:
         '-r',
         dest='repeat',
         type=int,
-        help='Repeatedly try to generate codes',
+        help='How code generation cycles to repeat',
         nargs='?',
     )
 
@@ -90,7 +97,13 @@ def parse_args() -> argparse.Namespace:
         'list', aliases=['l', '-l', '--list'], help='List TOTP keys'
     )
     parser_list.add_argument(
-        'name', type=str, help='Only list keys matching this name', nargs='?'
+        '--secret',
+        '-s',
+        '--secrets',
+        dest='secret',
+        action='store_true',
+        help='Show full secrets',
+        default=False,
     )
 
     return parser.parse_args()
@@ -103,39 +116,76 @@ def main() -> None:
     Op2FA = Open2FA()
     if args.command.startswith('a'):
         new_secret = Op2FA.add_secret(args.secret, args.name)
-        print(MSGS.SECRET_ADDED.format(new_secret))
+        print(
+            MSGS.SECRET_ADDED.format(
+                'name: {} | secret: {}'.format(
+                    new_secret.name, sec_trunc(new_secret.secret)
+                )
+            )
+        )
     # gen
     elif args.command.startswith('g'):
-        cols = ['Name', 'Code', 'Next Code In']
-        sys.stdout.write('\t\t'.join(cols) + '\n')
-        sys.stdout.write('\t\t'.join(['-' * len(c) for c in cols]) + '\n')
+        longest = max([len(str(s.name)) for s in Op2FA.secrets])
+
+        cols = ['Name'.ljust(longest), 'Code  ', 'Next Code']
+
+        sys.stdout.write(
+            '\n%s    %s    %s' % (cols[0], cols[1], cols[2]) + '\n'
+        )
+        sys.stdout.write('    '.join(['-' * len(str(c)) for c in cols]) + '\n')
 
         prev_lines = 0
         while True:
             buffer = []
             for c in Op2FA.generate_codes():
                 buffer.append(
-                    '%s\t\t%s\t\t%.2f'
-                    % (c.name, c.code.code, c.code.next_interval_in)
+                    '%s    %s    %s'
+                    % (
+                        str(c.name).ljust(longest),
+                        c.code.code,
+                        '%.2f' % c.code.next_interval_in,
+                    )
                 )
 
             # Clear the previous output
             sys.stdout.write('\033[F' * prev_lines)
 
             # Store the number of lines in the current buffer
-            prev_lines = len(buffer)
+            prev_lines = len(buffer) + 1
 
             # Write the current buffer
-            sys.stdout.write('\n'.join(buffer) + '\n')
+            sys.stdout.write('\n'.join(buffer) + '\n\n')
             sys.stdout.flush()
-            sleep(0.5)
+
+            if args.repeat is not None:
+                args.repeat -= 1
+                if args.repeat <= 0:
+                    break
+            sleep(0.25)
     # list
     elif args.command.startswith('l'):
-        print('\t\t'.join(['Name', 'Secret']))
-        print('\t\t'.join(['-' * len(c) for c in ['Name', 'Secret']]))
-        for s in Op2FA.secrets:
-            print('%s\t\t%s' % (s.name, truncstr(s.secret, start_chars=1, end_chars=1)))
+        longest_name = max([len(str(s.name)) for s in Op2FA.secrets])
+        longest_secret = max([
+            len(str(s.secret)) if args.secret is True else 5
+            for s in Op2FA.secrets
+        ])
+        longest = max(longest_name, longest_secret)
+        print(
+            '\n' + '\t'.join(['Name'.ljust(longest), 'Secret'.ljust(longest)])
+        )
 
+        print('%s\t%s' % ('-' * longest_name, '-' * longest_secret))
+        for s in Op2FA.secrets:
+            _sec = (
+                sec_trunc(s.secret).ljust(longest_secret)
+                if args.secret is False
+                else s.secret.ljust(longest_secret)
+            )
+            print(
+                '%s\t%s'
+                % (str(s.name).ljust(longest_name), _sec.ljust(longest_secret))
+            )
+        print()
     # delete
     elif args.command.startswith('d'):
         if not args.name:

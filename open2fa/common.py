@@ -11,6 +11,7 @@ import base64 as b64
 import os
 import os.path as osp
 from pyshared import default_repr
+from .utils import sec_trunc
 
 
 class RemoteSecret:
@@ -97,8 +98,8 @@ class O2FAUUID:
         self.secret = RemoteSecret(self.sha256[16:])
 
     def __repr__(self) -> str:
-        return "O2FAUUID(uuid={}, o2fa_id=b'{}', secret={})".format(
-            repr(self.uuid), self.o2fa_id, self.secret
+        return default_repr(
+            self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '
         )
 
 

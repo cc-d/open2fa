@@ -12,9 +12,18 @@ from .cli_utils import (
 )
 import typing as TYPE
 import json
+from . import ex as EX
+from . import msgs as MSGS
+from .utils import sec_trunc
 
 
 class Open2FA:
+    o2fa_dir: str
+    secrets_json_path: str
+    secrets: TYPE.List[TOTPSecret]
+    o2fa_uuid: TYPE.Union[O2FAUUID, None]
+    remote: bool
+
     def __init__(
         self,
         remote: bool = False,
@@ -31,6 +40,7 @@ class Open2FA:
             TOTPSecret(s['secret'], s['name'])
             for s in read_secrets_json(self.secrets_json_path)['secrets']
         ]
+        self.secrets.sort(key=lambda s: str(s.name).lower())
 
         self.o2fa_uuid = o2fa_uuid or config.OPEN2FA_UUID
 
@@ -42,6 +52,14 @@ class Open2FA:
         Returns:
             TOTPSecret: the new TOTPSecret object
         """
+        for s in self.secrets:
+            if s.name == name and s.secret == secret:
+                raise EX.SecretExistsError(
+                    'Secret name={} secret={} already exists'.format(
+                        name, sec_trunc(secret)
+                    )
+                )
+
         new_secret = TOTPSecret(secret, name)
         self.secrets.append(new_secret)
         self.write_secrets()
@@ -64,11 +82,18 @@ class Open2FA:
             if s.name == name:
                 if force:
                     continue
-                if input(
-                    'Are you sure you want to remove %s %s? (y/n): '
-                    % (s.name, s.secret)
-                ).startswith('y'):
+
+                if (
+                    input(
+                        MSGS.CONFIRM_SECRET_REMOVAL.format(
+                            s.name, sec_trunc(s.secret)
+                        )
+                    )
+                    .lower()
+                    .startswith('y')
+                ):
                     continue
+
             new_secrets.append(s)
         self.secrets = new_secrets
         self.write_secrets()
@@ -84,9 +109,7 @@ class Open2FA:
         Yields:
             Generator[TOTPSecret, None, None]: the TOTPSecret object[s]
         """
-        prev_code = None
         for s in self.secrets:
-            prev_code = s.code.code
             s.generate_code()
             if name is None or s.name == name:
                 yield s
