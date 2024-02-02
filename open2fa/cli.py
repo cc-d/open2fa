@@ -173,7 +173,7 @@ def main() -> None:
             '\n' + '\t'.join(['Name'.ljust(longest), 'Secret'.ljust(longest)])
         )
 
-        print('%s\t%s' % ('-' * longest_name, '-' * longest_secret))
+        print('%s    %s' % ('-' * longest_name, '-' * longest_secret))
         for s in Op2FA.secrets:
             _sec = (
                 sec_trunc(s.secret).ljust(longest_secret)
@@ -181,7 +181,7 @@ def main() -> None:
                 else s.secret.ljust(longest_secret)
             )
             print(
-                '%s\t%s'
+                '%s    %s'
                 % (str(s.name).ljust(longest_name), _sec.ljust(longest_secret))
             )
         print()
