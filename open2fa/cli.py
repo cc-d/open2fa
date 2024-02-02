@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
-import asyncio
 import argparse
+import asyncio
 import os
 import os.path as osp
-import typing as TYPE
 import sys
-from time import sleep
-from pathlib import Path
-from logging import getLogger
-from .main import Open2FA
-from . import msgs as MSGS
-from .utils import sec_trunc
-from . import config
+import typing as TYPE
 import uuid
+from logging import getLogger
+from pathlib import Path
+from time import sleep
+
+from logfunc import logf
+
+from . import config
+from . import msgs as MSGS
+from .main import Open2FA
+from .utils import sec_trunc
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
 
 
+@logf()
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments.
     Returns:
@@ -143,6 +147,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@logf()
 def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
     """Infinite code generation loop."""
     longest = max([len(str(s.name)) for s in op2fa.secrets])
@@ -161,7 +166,7 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
                 % (
                     str(c.name).ljust(longest),
                     c.code.code,
-                    '%.2f' % c.code.next_interval_in,
+                    '%.2f' % round(c.code.next_interval_in, 2),
                 )
             )
 
@@ -182,6 +187,7 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
         sleep(0.5)
 
 
+@logf()
 def handle_remote_init():
     """Handles initialization of remote capabilities."""
     # Check if OPEN2FA_UUID is set or exists
@@ -189,24 +195,23 @@ def handle_remote_init():
     uuid_file_path = os.path.join(open2fa_dir, 'open2fa.uuid')
 
     if config.OPEN2FA_UUID:
-        print("Remote capabilities are already initialized.")
+        print(MSGS.INIT_EVAR_SET)
     elif os.path.exists(uuid_file_path):
-        print("Found existing UUID file.")
+        print(MSGS.INIT_FOUND_UUID)
     else:
-        user_response = input(
-            "Do you want to initialize remote capabilities of Open2FA? (y/n): "
-        )
+        user_response = input(MSGS.INIT_CONFIRM)
         if user_response.lower() == 'y':
             # Generate new UUID and write to file
             new_uuid = str(uuid.uuid4())
             with open(uuid_file_path, 'w') as uuid_file:
                 uuid_file.write(new_uuid)
             os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
-            print(f"Remote capabilities initialized with UUID: {new_uuid}")
+            print(MSGS.INIT_SUCCESS.format(new_uuid))
         else:
-            print("Remote capabilities not initialized.")
+            print(MSGS.INIT_FAIL)
 
 
+@logf()
 def main() -> None:
     args = parse_args()
     args.command = args.command.lower()
@@ -261,10 +266,12 @@ def main() -> None:
     # delete
     elif args.command.startswith('d'):
         if set([args.name, args.secret]) == {None}:
-            print('No secret or name provided to delete.')
+            print(MSGS.DEL_NO_NAME_SECRET)
             return
         print(
-            Op2FA.remove_secret(args.name, args.secret), 'secret(s) removed.'
+            MSGS.DEL_SUCCESS.format(
+                Op2FA.remove_secret(args.name, args.secret)
+            )
         )
 
 

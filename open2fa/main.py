@@ -1,22 +1,24 @@
-from . import config
+import json
 import os
 import os.path as osp
+import typing as TYPE
 from pathlib import Path
-from .common import O2FAUUID, RemoteSecret, TOTPSecret
-from .totp import TOTP2FACode, generate_totp_2fa_code
+
+import requests as req
+from logfunc import logf
+
+from . import config
+from . import ex as EX
+from . import msgs as MSGS
 from .cli_utils import (
     ensure_open2fa_dir,
     ensure_secrets_json,
     read_secrets_json,
     write_secrets_json,
 )
-import typing as TYPE
-import json
-from . import ex as EX
-from . import msgs as MSGS
-from .utils import sec_trunc
-import requests as req
-from logfunc import logf
+from .common import O2FAUUID, RemoteSecret, TOTPSecret
+from .totp import TOTP2FACode, generate_totp_2fa_code
+from .utils import ApiResponse, apireq, sec_trunc
 
 
 class Open2FA:
@@ -47,6 +49,7 @@ class Open2FA:
             self.o2fa_uuid = O2FAUUID(o2fa_uuid)
             self.remote_url = o2fa_api_url or config.OPEN2FA_API_URL
 
+    @logf()
     def add_secret(self, secret: str, name: str) -> TOTPSecret:
         """Add a new TOTP secret to the Open2FA object.
         Args:
@@ -68,6 +71,7 @@ class Open2FA:
         self.write_secrets()
         return new_secret
 
+    @logf()
     def remove_secret(self, *args, **kwargs):
         """Remove a TOTP secret from the Open2FA object. Force can
         also be used to confirm specific secret removals if multiple
@@ -106,6 +110,7 @@ class Open2FA:
         self.write_secrets()
         return _seclen - len(new_secrets)
 
+    @logf()
     def generate_codes(
         self, name: TYPE.Optional[str] = None
     ) -> TYPE.Generator:
@@ -121,13 +126,14 @@ class Open2FA:
             if name is None or s.name == name:
                 yield s
 
+    @logf()
     def write_secrets(self) -> None:
         """Write the secrets to the secrets.json file."""
         write_secrets_json(
             self.secrets_json_path, [s.json() for s in self.secrets]
         )
 
-    @logf(use_print=True)
+    @logf()
     def remote_push(self) -> TYPE.List[TOTPSecret]:
         """Push the secrets to the remote server."""
         if self.o2fa_uuid is None:
@@ -138,27 +144,24 @@ class Open2FA:
         enc_secrets = [
             {'enc_secret': remote.encrypt(s.secret), 'name': s.name}
             for s in self.secrets
+            if str(s.name).lower() != 'pypi'
         ]
-        r = req.post(
-            self.remote_url + '/totps',
+        r = apireq(
+            'POST',
+            'totps',
+            data={'totps': enc_secrets},
             headers={'X-User-Hash': uhash},
-            json={'totps': enc_secrets},
+            api_url=self.remote_url,
         )
-        if r.status_code != 200:
-            raise EX.RemoteError(
-                'Remote server returned: {} {} {}'.format(
-                    r.status_code, r.reason, r.text
-                )
-            )
         new_secrets = []
-        for sec in r.json()['totps']:
+        for sec in r.data['totps']:
             new_sec = TOTPSecret(
                 remote.decrypt(sec['enc_secret']), sec['name']
             )
             new_secrets.append(new_sec)
         return new_secrets
 
-    @logf(use_print=True)
+    @logf()
     def remote_pull(self) -> TYPE.List[TOTPSecret]:
         """Pull the secrets from the remote server."""
         if self.o2fa_uuid is None:
@@ -166,15 +169,14 @@ class Open2FA:
 
         remote = self.o2fa_uuid.remote
         uhash = self.o2fa_uuid.o2fa_id
-        r = req.get(self.remote_url + '/totps', headers={'X-User-Hash': uhash})
-        if r.status_code != 200:
-            raise EX.RemoteError(
-                'Remote server returned: {} {} {}'.format(
-                    r.status_code, r.reason, r.text
-                )
-            )
+        api_resp = apireq(
+            'GET',
+            'totps',
+            headers={'X-User-Hash': uhash},
+            api_url=self.remote_url,
+        )
         new_secrets = []
-        for sec in r.json()['totps']:
+        for sec in api_resp.data['totps']:
             new_sec = TOTPSecret(
                 remote.decrypt(sec['enc_secret']), sec['name']
             )

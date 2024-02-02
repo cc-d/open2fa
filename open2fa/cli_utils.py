@@ -1,19 +1,20 @@
+import json
 import logging
 import os
 import os.path as osp
 import sys
 import time
 import typing as TYPE
-import json
 from glob import glob
 from pathlib import Path
+
 from .config import (
     INTERVAL,
-    OPEN2FA_UUID,
-    OPEN2FA_KEY_PERMS,
+    OPEN2FA_API_URL,
     OPEN2FA_DIR,
     OPEN2FA_DIR_PERMS,
-    OPEN2FA_API_URL,
+    OPEN2FA_KEY_PERMS,
+    OPEN2FA_UUID,
 )
 
 logger = logging.getLogger(__name__)

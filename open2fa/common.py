@@ -1,16 +1,18 @@
-import typing as TYPE
-from uuid import uuid4, UUID
-from hashlib import sha256
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.padding import PKCS7
-from cryptography.hazmat.backends import default_backend
-from .totp import generate_totp_2fa_code, TOTP2FACode
-from time import time
-from base58 import b58encode, b58decode
 import base64 as b64
 import os
 import os.path as osp
+import typing as TYPE
+from hashlib import sha256
+from time import time
+from uuid import UUID, uuid4
+
+from base58 import b58decode, b58encode
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
 from pyshared import default_repr
+
+from .totp import TOTP2FACode, generate_totp_2fa_code
 from .utils import sec_trunc
 
 
