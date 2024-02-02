@@ -138,7 +138,6 @@ class Open2FA:
         enc_secrets = [
             {'enc_secret': remote.encrypt(s.secret), 'name': s.name}
             for s in self.secrets
-            if s.name != 'pypi'
         ]
         r = req.post(
             self.remote_url + '/totps',
