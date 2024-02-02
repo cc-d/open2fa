@@ -66,9 +66,14 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help='Entire or partial secret to delete',
         nargs='?',
+        default=None,
     )
     parser_delete.add_argument(
-        'name', type=str, help='Name of the secret to delete', nargs='?'
+        'name',
+        type=str,
+        help='Name of the secret to delete',
+        nargs='?',
+        default=None,
     )
 
     # Generate command
@@ -187,10 +192,12 @@ def main() -> None:
         print()
     # delete
     elif args.command.startswith('d'):
-        if not args.name:
-            print("Must specify an organization name to delete.")
-            sys.exit(1)
-        print(Op2FA.remove_secret(args.name), 'secret(s) removed.')
+        if set([args.name, args.secret]) == {None}:
+            print('No secret or name provided to delete.')
+            return
+        print(
+            Op2FA.remove_secret(args.name, args.secret), 'secret(s) removed.'
+        )
 
 
 if __name__ == "__main__":

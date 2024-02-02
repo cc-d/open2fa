@@ -94,15 +94,19 @@ You can run the tests by running `pytest tests.py` in the root directory of the 
 or by running the vscode pytest launch configuration with f5.
 
 ```
-Name                    Stmts   Miss  Cover   Missing
------------------------------------------------------
-open2fa/__init__.py         0      0   100%
-open2fa/cli.py             75     13    83%   103-104, 107-108, 128-130, 137, 145-146, 150-151, 155
-open2fa/cli_config.py       4      0   100%
-open2fa/cli_utils.py      149     33    78%   22-23, 90-95, 114-115, 132-144, 178, 212, 215-218, 221-222, 229-233, 277-278, 301, 304-306
-open2fa/config.py           5      0   100%
-open2fa/main.py             0      0   100%
-open2fa/utils.py           16      0   100%
------------------------------------------------------
-TOTAL                     249     46    82%
+---------- coverage: platform darwin, python 3.11.7-final-0 ----------
+Name                   Stmts   Miss  Cover   Missing
+----------------------------------------------------
+open2fa/__init__.py        0      0   100%
+open2fa/cli.py            79     13    84%   168, 171-192, 196-197, 204
+open2fa/cli_utils.py      40      0   100%
+open2fa/common.py         70     27    61%   32-34, 37, 46-57, 66-77, 88-98, 101, 121, 124
+open2fa/config.py         11      2    82%   11-12
+open2fa/ex.py              3      1    67%   3
+open2fa/main.py           55      4    93%   56-57, 90, 101
+open2fa/msgs.py            4      0   100%
+open2fa/totp.py           30      1    97%   24
+open2fa/utils.py           3      0   100%
+----------------------------------------------------
+TOTAL                    295     48    84%
 ```

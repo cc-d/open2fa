@@ -65,7 +65,7 @@ class Open2FA:
         self.write_secrets()
         return new_secret
 
-    def remove_secret(self, name: str, force: bool = False) -> int:
+    def remove_secret(self, *args, **kwargs):
         """Remove a TOTP secret from the Open2FA object. Force can
         also be used to confirm specific secret removals if multiple
         secrets have the same name.
@@ -78,16 +78,20 @@ class Open2FA:
         """
         new_secrets = []
         _seclen = len(self.secrets)
+        force = kwargs.get('force', False)
+        del_vals = args
         for s in self.secrets:
-            if s.name == name:
+            if (
+                s.name is not None
+                and s.name in del_vals
+                or s.secret in del_vals
+            ):
                 if force:
                     continue
 
                 if (
                     input(
-                        MSGS.CONFIRM_SECRET_REMOVAL.format(
-                            s.name, sec_trunc(s.secret)
-                        )
+                        MSGS.CONFIRM_REMOVE.format(s.name, sec_trunc(s.secret))
                     )
                     .lower()
                     .startswith('y')
