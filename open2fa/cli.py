@@ -179,7 +179,7 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
             repeat -= 1
             if repeat <= 0:
                 break
-        sleep(0.25)
+        sleep(0.5)
 
 
 def handle_remote_init():

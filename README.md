@@ -27,7 +27,7 @@ pip install 'open2fa[dev]'
 1. **Add a TOTP Secret**:
 
    ```bash
-   open2fa add secret -n aTESTTESTTESTTESTTESTTEST334434
+   open2fa add secret I65VU7K5ZQL7WB4E -n aTESTTESTTESTTESTTESTTEST334434
    ```
 
    Example Output:
@@ -64,6 +64,26 @@ pip install 'open2fa[dev]'
    pypi                            A...B
    TESTTESTTESTTESTTESTTEST        I...E
    TESTTESTTESTTESTTESTTEST2       I...E
+   ```
+
+   To show the secret keys, use the `-s` flag:
+
+   ```bash
+   open2fa list -s
+
+   Name                                    Secret
+   -------------------------------    --------------------------------
+   aTESTTESTTESTTESTTESTTEST          I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST3         I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST33        I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST334       I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST3344      I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST33443     I65VU7K5ZQL7WB4E
+   aTESTTESTTESTTESTTESTTEST334434    I65VU7K5ZQL7WB4E
+   None                               I65VU7K5ZQL7WB4E
+   pypi                               CENSORED
+   TESTTESTTESTTESTTESTTEST           I65VU7K5ZQL7WB4E
+   TESTTESTTESTTESTTESTTEST2          I65VU7K5ZQL7WB4E
    ```
 
 4. **Generate 2FA Codes**:
