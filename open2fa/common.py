@@ -80,7 +80,7 @@ class RemoteSecret:
 class O2FAUUID:
     uuid: UUID
     o2fa_id: str
-    secret: RemoteSecret
+    remote: RemoteSecret
 
     def __init__(self, uuid: UUID | str | bytes):
         """Create a new O2FAUUID object."""
@@ -95,7 +95,7 @@ class O2FAUUID:
         self.uuid = UUID(bytes=uuid)
         self.sha256 = sha256(self.uuid.bytes).digest()
         self.o2fa_id = b58encode(self.sha256[:16]).decode()
-        self.secret = RemoteSecret(self.sha256[16:])
+        self.remote = RemoteSecret(self.sha256[16:])
 
     def __repr__(self) -> str:
         return default_repr(

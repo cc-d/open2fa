@@ -15,6 +15,8 @@ import json
 from . import ex as EX
 from . import msgs as MSGS
 from .utils import sec_trunc
+import requests as req
+from logfunc import logf
 
 
 class Open2FA:
@@ -22,16 +24,15 @@ class Open2FA:
     secrets_json_path: str
     secrets: TYPE.List[TOTPSecret]
     o2fa_uuid: TYPE.Union[O2FAUUID, None]
-    remote: bool
+    o2fa_api_url: TYPE.Union[str, None]
 
     def __init__(
         self,
-        remote: bool = False,
         o2fa_dir: TYPE.Union[str, Path] = config.OPEN2FA_DIR,
         o2fa_uuid: TYPE.Optional[str] = None,
+        o2fa_api_url: TYPE.Optional[str] = None,
     ):
         """Create a new Open2FA object."""
-        self.remote = remote
         self.o2fa_dir = ensure_open2fa_dir(str(o2fa_dir))
         self.secrets_json_path = ensure_secrets_json(
             osp.join(self.o2fa_dir, 'secrets.json')
@@ -42,7 +43,9 @@ class Open2FA:
         ]
         self.secrets.sort(key=lambda s: str(s.name).lower())
 
-        self.o2fa_uuid = o2fa_uuid or config.OPEN2FA_UUID
+        if o2fa_uuid is not None:
+            self.o2fa_uuid = O2FAUUID(o2fa_uuid)
+            self.remote_url = o2fa_api_url or config.OPEN2FA_API_URL
 
     def add_secret(self, secret: str, name: str) -> TOTPSecret:
         """Add a new TOTP secret to the Open2FA object.
@@ -123,3 +126,58 @@ class Open2FA:
         write_secrets_json(
             self.secrets_json_path, [s.json() for s in self.secrets]
         )
+
+    @logf(use_print=True)
+    def remote_push(self) -> TYPE.List[TOTPSecret]:
+        """Push the secrets to the remote server."""
+        if self.o2fa_uuid is None:
+            raise EX.NoUUIDError()
+
+        remote = self.o2fa_uuid.remote
+        uhash = self.o2fa_uuid.o2fa_id
+        enc_secrets = [
+            {'enc_secret': remote.encrypt(s.secret), 'name': s.name}
+            for s in self.secrets
+            if s.name != 'pypi'
+        ]
+        r = req.post(
+            self.remote_url + '/totps',
+            headers={'X-User-Hash': uhash},
+            json={'totps': enc_secrets},
+        )
+        if r.status_code != 200:
+            raise EX.RemoteError(
+                'Remote server returned: {} {} {}'.format(
+                    r.status_code, r.reason, r.text
+                )
+            )
+        new_secrets = []
+        for sec in r.json()['totps']:
+            new_sec = TOTPSecret(
+                remote.decrypt(sec['enc_secret']), sec['name']
+            )
+            new_secrets.append(new_sec)
+        return new_secrets
+
+    @logf(use_print=True)
+    def remote_pull(self) -> TYPE.List[TOTPSecret]:
+        """Pull the secrets from the remote server."""
+        if self.o2fa_uuid is None:
+            raise EX.NoUUIDError()
+
+        remote = self.o2fa_uuid.remote
+        uhash = self.o2fa_uuid.o2fa_id
+        r = req.get(self.remote_url + '/totps', headers={'X-User-Hash': uhash})
+        if r.status_code != 200:
+            raise EX.RemoteError(
+                'Remote server returned: {} {} {}'.format(
+                    r.status_code, r.reason, r.text
+                )
+            )
+        new_secrets = []
+        for sec in r.json()['totps']:
+            new_sec = TOTPSecret(
+                remote.decrypt(sec['enc_secret']), sec['name']
+            )
+            new_secrets.append(new_sec)
+        return new_secrets

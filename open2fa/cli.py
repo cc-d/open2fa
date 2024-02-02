@@ -11,6 +11,8 @@ from logging import getLogger
 from .main import Open2FA
 from . import msgs as MSGS
 from .utils import sec_trunc
+from . import config
+import uuid
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -111,6 +113,33 @@ def parse_args() -> argparse.Namespace:
         default=False,
     )
 
+    # remote command
+    parser_remote = subparsers.add_parser(
+        'remote', aliases=['r', '-r', '--remote'], help='Remote operations'
+    )
+    remote_subparsers = parser_remote.add_subparsers(
+        dest='remote_command', required=True, help='Remote operations'
+    )
+
+    # Init remote command
+    remote_subparsers.add_parser(
+        'init',
+        aliases=['i', '-i', '--init'],
+        help='Initialize remote capabilities',
+    )
+
+    # Push remote command
+    remote_subparsers.add_parser(
+        'push',
+        help='Push secrets to remote',
+        aliases=['pus', '-pus', '--push'],
+    )
+    # Pull remote command
+    remote_subparsers.add_parser(
+        'pull',
+        help='Pull secrets from remote',
+        aliases=['pul', '-pul', '--pull'],
+    )
     return parser.parse_args()
 
 
@@ -153,10 +182,46 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
         sleep(0.25)
 
 
+def handle_remote_init():
+    """Handles initialization of remote capabilities."""
+    # Check if OPEN2FA_UUID is set or exists
+    open2fa_dir = config.OPEN2FA_DIR
+    uuid_file_path = os.path.join(open2fa_dir, 'open2fa.uuid')
+
+    if config.OPEN2FA_UUID:
+        print("Remote capabilities are already initialized.")
+    elif os.path.exists(uuid_file_path):
+        print("Found existing UUID file.")
+    else:
+        user_response = input(
+            "Do you want to initialize remote capabilities of Open2FA? (y/n): "
+        )
+        if user_response.lower() == 'y':
+            # Generate new UUID and write to file
+            new_uuid = str(uuid.uuid4())
+            with open(uuid_file_path, 'w') as uuid_file:
+                uuid_file.write(new_uuid)
+            os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
+            print(f"Remote capabilities initialized with UUID: {new_uuid}")
+        else:
+            print("Remote capabilities not initialized.")
+
+
 def main() -> None:
     args = parse_args()
     args.command = args.command.lower()
 
+    if args.command.startswith('r'):
+        Op2FA = Open2FA(
+            o2fa_uuid=config.OPEN2FA_UUID, o2fa_api_url=config.OPEN2FA_API_URL
+        )
+        if args.remote_command.startswith('i'):
+            handle_remote_init()
+        elif args.remote_command.startswith('pus'):
+            Op2FA.remote_push()
+        elif args.remote_command.startswith('pul'):
+            Op2FA.remote_pull()
+        return
     Op2FA = Open2FA()
     if args.command.startswith('a'):
         new_secret = Op2FA.add_secret(args.secret, args.name)
