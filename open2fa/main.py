@@ -72,12 +72,16 @@ class Open2FA:
         return new_secret
 
     @logf()
-    def remove_secret(self, *args, **kwargs):
-        """Remove a TOTP secret from the Open2FA object. Force can
-        also be used to confirm specific secret removals if multiple
-        secrets have the same name.
+    def remove_secret(
+        self,
+        name: TYPE.Optional[str] = None,
+        sec: TYPE.Optional[str] = None,
+        force: bool = False,
+    ) -> int:
+        """Remove a TOTP secret from the Open2FA object.
         Args:
-            name (str): the name of the secret to remove
+            name (str, optional): the name of the secret to remove
+            sec (str, optional): the secret to remove
             force (bool): whether to remove the secret without confirmation
                 Default: False
         Returns:
@@ -85,21 +89,23 @@ class Open2FA:
         """
         new_secrets = []
         _seclen = len(self.secrets)
-        force = kwargs.get('force', False)
-        del_vals = args
         for s in self.secrets:
-            if (
-                s.name is not None
-                and s.name in del_vals
-                or s.secret in del_vals
-            ):
-                if force:
-                    continue
-
-                if input_confirm(MSGS.CONFIRM_REMOVE.format(s.name, s.secret)):
-                    continue
-
-            new_secrets.append(s)
+            remove = False
+            str_name, str_secret = str(s.name), str(s.secret)
+            if sec is not None:
+                if str_secret == sec:
+                    if force or input_confirm(
+                        MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
+                    ):
+                        remove = True
+            if name is not None:
+                if str_name == name:
+                    if force or input_confirm(
+                        MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
+                    ):
+                        remove = True
+            if not remove:
+                new_secrets.append(s)
         self.secrets = new_secrets
         self.write_secrets()
         return _seclen - len(new_secrets)
@@ -175,4 +181,5 @@ class Open2FA:
                 remote.decrypt(sec['enc_secret']), sec['name']
             )
             new_secrets.append(new_sec)
+
         return new_secrets

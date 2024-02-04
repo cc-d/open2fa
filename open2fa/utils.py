@@ -44,7 +44,6 @@ def apireq(
         endpoint (str): the API endpoint
         data (dict, optional): the request data
         headers (dict, optional): the request headers
-
         api_url (str): the API URL
             Default: OPEN2FA_API_URL
     Returns:

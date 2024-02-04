@@ -92,3 +92,46 @@ def write_secrets_json(filepath: TYPE.Union[str, Path], data: dict) -> None:
     with os.fdopen(fd, 'w') as f:
         f.write(json.dumps({'secrets': data}))
     os.replace('%s.tmp' % json_path, json_path)
+
+
+def dash_arg(arg: str) -> TYPE.Set[str]:
+    """Adds - and -- to possible cli arg aliases"""
+    return {arg, '-%s' % arg, '--%s' % arg}
+
+
+def parse_cli_arg_aliases(argv_args: TYPE.List[str]) -> TYPE.List[str]:
+    """turns cli arg aliases into their canonical form"""
+    alias_map = {
+        'list': {'l', '-l'}.union(dash_arg('list')),
+        'add': {'a', '-a'}.union(dash_arg('add')),
+        'delete': {'d', '-d'}.union(dash_arg('delete')),
+        'generate': {'g', '-g'}.union(dash_arg('generate')),
+        'remote': {'r', '-r'}.union(dash_arg('remote')),
+        'info': {'i', '-i'}
+        .union(dash_arg('inf'))
+        .union(dash_arg('info'))
+        .union(dash_arg('stat'))
+        .union(dash_arg('status')),
+    }
+    first_arg = argv_args[1].lower()
+    for cmd, aliases in alias_map.items():
+        if first_arg in aliases:
+            argv_args[1] = cmd
+            break
+
+    if len(argv_args) > 2:
+        second_arg = argv_args[2].lower()
+        use_alias_map = None
+        if first_arg == 'remote':
+            use_alias_map = {
+                'push': dash_arg('pus').union(dash_arg('push')),
+                'pull': dash_arg('pul').union(dash_arg('pull')),
+                'init': dash_arg('ini').union(dash_arg('init')),
+            }
+        if use_alias_map:
+            for cmd, aliases in use_alias_map.items():
+                if second_arg in aliases:
+                    argv_args[2] = cmd
+                    break
+
+    return argv_args

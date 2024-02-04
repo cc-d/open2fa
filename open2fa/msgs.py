@@ -24,9 +24,10 @@ ADD_ALREADY_EXISTS = (
     'Secret {} already exists with name {}, overwriting? (y/n): '
 )
 
-
+_title_pad = '=' * 10
 INFO_STATUS = (
-    '\n[Open2FA INFO/STATUS] (add -s to show uncensored)\n\n'
+    '\n' + _title_pad + ' Open2FA INFO/STATUS ' + _title_pad + '\n'
+    '(add -s to show uncensored secrets)\n\n'
     'Open2FA Directory: {}\n'
     'Open2FA Remote API URL: {}\n'
     'Number of secrets: {}\n'

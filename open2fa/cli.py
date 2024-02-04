@@ -14,6 +14,7 @@ from logfunc import logf
 
 from . import config
 from . import msgs as MSGS
+from .cli_utils import parse_cli_arg_aliases
 from .main import Open2FA
 from .utils import sec_trunc
 
@@ -27,31 +28,17 @@ def parse_args() -> argparse.Namespace:
     Returns:
         argparse.Namespace: The parsed arguments.
     """
+    sys.argv = parse_cli_arg_aliases(sys.argv)
     parser = argparse.ArgumentParser(
         description="open2fa CLI: simple 2FA CLI interface"
     )
     subparsers = parser.add_subparsers(dest='command', required=True)
 
-    # Handle short aliases for commands
-    if len(sys.argv) > 1:
-        alias_map = {
-            'list': {'l', '-l', '--list', '-list', 'list'},
-            'add': {'a', '-a', '--add', '-add', 'add'},
-            'delete': {'d', '-d', '--delete', '-delete', 'delete'},
-            'generate': {'g', '-g', '--generate', '-generate', 'generate'},
-            'init': {'i', '-i', '--init', '-init', 'init'},
-        }
-        first_arg = sys.argv[1].lower()
-        for cmd, aliases in alias_map.items():
-            if first_arg in aliases:
-                sys.argv[1] = cmd
-                break
-
     # Add command
     parser_add = subparsers.add_parser(
         'add',
-        aliases=['a', '-a', '--add'],
         help='Add a new TOTP secret key for an organization',
+        aliases=['a'],
     )
     parser_add.add_argument(
         'secret', type=str, help='The TOTP secret key', nargs='?'
@@ -64,54 +51,48 @@ def parse_args() -> argparse.Namespace:
     # Delete command
     parser_delete = subparsers.add_parser(
         'delete',
-        aliases=['d', '-d', '--delete'],
         help='Delete a TOTP secret key for an organization',
+        aliases=['d'],
     )
     parser_delete.add_argument(
-        'secret',
+        '--secret',
+        '-s',
         type=str,
-        help='Entire or partial secret to delete',
-        nargs='?',
-        default=None,
+        help='The TOTP secret key to delete',
+        dest='secret',
     )
     parser_delete.add_argument(
-        'name',
+        '--name',
+        '-n',
         type=str,
         help='Name of the secret to delete',
-        nargs='?',
-        default=None,
+        dest='name',
     )
 
     # Generate command
     parser_generate = subparsers.add_parser(
         'generate',
-        aliases=['g', '-g', '--generate'],
         help='Generate a TOTP code for an organization',
+        aliases=['g'],
     )
-    parser_generate.add_argument(
-        'name',
-        type=str,
-        help='Name of the secret to generate codes for',
-        nargs='?',
-    )
+
     parser_generate.add_argument(
         '--repeat',
         '-r',
         dest='repeat',
         type=int,
         help='How code generation cycles to repeat',
-        nargs='?',
     )
 
     # List command
     parser_list = subparsers.add_parser(
-        'list', aliases=['l', '-l', '--list'], help='List TOTP keys'
+        'list', help='List TOTP keys', aliases=['l']
     )
     parser_list.add_argument(
-        '--secret',
         '-s',
         '--secrets',
-        dest='secret',
+        '--secret',
+        dest='secrets',
         action='store_true',
         help='Show full secrets',
         default=False,
@@ -119,54 +100,33 @@ def parse_args() -> argparse.Namespace:
 
     # remote command
     parser_remote = subparsers.add_parser(
-        'remote', aliases=['r', '-r', '--remote'], help='Remote operations'
+        'remote', help='Remote operations', aliases=['r']
     )
     remote_subparsers = parser_remote.add_subparsers(
         dest='remote_command', required=True, help='Remote operations'
     )
 
     # Init remote command
-    remote_subparsers.add_parser(
-        'init',
-        aliases=['i', '-i', '--init'],
-        help='Initialize remote capabilities',
-    )
+    remote_subparsers.add_parser('init', help='Initialize remote capabilities')
 
     # Info/Status remote command
-    info_parser = remote_subparsers.add_parser(
-        'info',
-        help='Get remote status',
-        aliases=[
-            'inf',
-            '-inf',
-            '--info',
-            's',
-            'stat',
-            '-stat',
-            'status',
-            '--status',
-        ],
+    parser_info = subparsers.add_parser(
+        'info', help='Show Open2FA info/status', aliases=['i']
     )
 
-    info_parser.add_argument(
+    parser_info.add_argument(
         '-s',
+        '--secret',
+        '--secrets',
         help='Show all info/status info without censorship',
         dest='secret',
         action='store_true',
         default=False,
     )
     # Push remote command
-    remote_subparsers.add_parser(
-        'push',
-        help='Push secrets to remote',
-        aliases=['pus', '-pus', '--push'],
-    )
+    remote_subparsers.add_parser('push', help='Push secrets to remote')
     # Pull remote command
-    remote_subparsers.add_parser(
-        'pull',
-        help='Pull secrets from remote',
-        aliases=['pul', '-pul', '--pull'],
-    )
+    remote_subparsers.add_parser('pull', help='Pull secrets from remote')
 
     return parser.parse_args()
 
@@ -268,7 +228,6 @@ def handle_info(op2fa: Open2FA, show_secrets: bool = False) -> None:
 @logf()
 def main(*args, **kwargs) -> None:
     cli_args = parse_args()
-    cli_args.command = cli_args.command.lower()
 
     _dir = kwargs.get('dir', config.OPEN2FA_DIR)
     _uuid = kwargs.get('uuid', config.OPEN2FA_UUID)
@@ -276,24 +235,23 @@ def main(*args, **kwargs) -> None:
 
     Op2FA = Open2FA(_dir, _uuid, _api_url)
 
+    # init
+    if cli_args.command == 'init':
+        handle_remote_init(Op2FA)
+    # info
+    elif cli_args.command == 'info':
+        handle_info(Op2FA, cli_args.secret)
     # remote
-    if cli_args.command.startswith('r'):
+    elif cli_args.command == 'remote':
         Op2FA = Open2FA(
             o2fa_uuid=config.OPEN2FA_UUID, o2fa_api_url=config.OPEN2FA_API_URL
         )
-        if cli_args.remote_command.startswith('ini'):
-            handle_remote_init()
-        # status/info both the same
-        elif cli_args.remote_command.startswith(
-            'inf'
-        ) or cli_args.remote_command.startswith('s'):
-            handle_info(Op2FA, cli_args.secret)
-        elif cli_args.remote_command.startswith('pus'):
+        if cli_args.remote_command.startswith('pus'):
             Op2FA.remote_push()
         elif cli_args.remote_command.startswith('pul'):
             Op2FA.remote_pull()
         return
-    if cli_args.command.startswith('a'):
+    elif cli_args.command == 'add':
         new_secret = Op2FA.add_secret(cli_args.secret, cli_args.name)
         print(
             '\n'
@@ -302,25 +260,26 @@ def main(*args, **kwargs) -> None:
             )
         )
     # gen
-    elif cli_args.command.startswith('g'):
+    elif cli_args.command == 'generate':
         code_gen(Op2FA, cli_args.repeat)
     # list
-    elif cli_args.command.startswith('l'):
+    elif cli_args.command == 'list':
         longest_name = max([len(str(s.name)) for s in Op2FA.secrets])
         longest_secret = max([
-            len(str(s.secret)) if cli_args.secret is True else 5
+            len(str(s.secret)) if cli_args.secrets is True else 5
             for s in Op2FA.secrets
         ])
         longest = max(longest_name, longest_secret)
         print(
-            '\n' + '\t'.join(['Name'.ljust(longest), 'Secret'.ljust(longest)])
+            '\n'
+            + '    '.join(['Name'.ljust(longest), 'Secret'.ljust(longest)])
         )
 
         print('%s    %s' % ('-' * longest_name, '-' * longest_secret))
         for s in Op2FA.secrets:
             _sec = (
                 sec_trunc(s.secret).ljust(longest_secret)
-                if cli_args.secret is False
+                if cli_args.secrets is False
                 else s.secret.ljust(longest_secret)
             )
             print(
@@ -329,7 +288,7 @@ def main(*args, **kwargs) -> None:
             )
         print()
     # delete
-    elif args.command.startswith('d'):
+    elif cli_args.command == 'delete':
         if set([cli_args.name, cli_args.secret]) == {None}:
             print(MSGS.DEL_NO_NAME_SECRET)
             return
