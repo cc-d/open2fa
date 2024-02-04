@@ -23,3 +23,14 @@ DEL_SUCCESS = 'Deleted {} secret(s).'
 ADD_ALREADY_EXISTS = (
     'Secret {} already exists with name {}, overwriting? (y/n): '
 )
+
+
+INFO_STATUS = (
+    '\n[Open2FA INFO/STATUS] (add -s to show uncensored)\n\n'
+    'Open2FA Directory: {}\n'
+    'Open2FA Remote API URL: {}\n'
+    'Number of secrets: {}\n'
+    'Open2FA UUID: {}\n'
+    'Open2FA ID: {}\n'
+    'Open2FA Secret: {}\n'
+)
