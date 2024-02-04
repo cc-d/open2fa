@@ -1,10 +1,12 @@
 import pytest
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import sys
 import os
+from uuid import UUID, uuid4
 from open2fa.cli import Open2FA, handle_remote_init
-from open2fa.utils import apireq
+from open2fa.main import apireq
+from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 
 # Assuming ranstr function exists for generating random strings
 from pyshared import ranstr
@@ -46,9 +48,7 @@ def test_generate_key(add_secret):
     with patch('sys.stdout', new=StringIO()) as fake_generate:
         main(dir=_dir)
 
-    # Assertions about the generated code can go here
-    # For example, check if the output contains expected elements of a TOTP code
-    assert "Code" in fake_generate.getvalue()
+    assert _name in fake_generate.getvalue()
 
 
 def test_info(add_secret):
@@ -78,9 +78,10 @@ def test_init(fake_remote_init, add_secret):
     """Test initializing the remote capabilities of Open2FA."""
     from open2fa.cli import main
 
+    _name, _secret, _dir = add_secret
     sys.argv = ['open2fa', 'remote', 'init']
     with patch('sys.stdout', new=StringIO()) as fake_init:
-        main()
+        main(dir=_dir)
 
     # Assertions about the generated code can go here
     # For example, check if the output contains expected elements of a TOTP code
@@ -108,3 +109,28 @@ def test_list(add_secret):
     assert _secret in fake_list.getvalue()
     assert _name in fake_list.getvalue()
     assert '...' not in fake_list.getvalue()
+
+
+def test_remote_pull(add_secret):
+    """Test pulling the remote capabilities of Open2FA."""
+    from open2fa.cli import main
+
+    sec2 = 'JBSWY3DPEHPK3PXP'
+    _name, _secret, _dir = add_secret
+    new_secret = _secret
+    fake_uuid = str(uuid4())
+    o2fa = Open2FA(_dir, fake_uuid, 'https://example.com')
+    enc = o2fa.o2fa_uuid.remote.encrypt(sec2)
+
+    fake_totp_data = {'totps': [{'name': _name, 'enc_secret': enc}]}
+
+    class FakeResp:
+        data = fake_totp_data
+
+    sys.argv = ['open2fa', 'remote', 'pull']
+    with patch('sys.stdout', new=StringIO()) as fake_pull:
+        with patch('open2fa.main.apireq', return_value=FakeResp()):
+            main(dir=_dir, uuid=fake_uuid, api_url='https://example.com')
+    assert 'Pulled' in fake_pull.getvalue()
+    with open(os.path.join(_dir, 'secrets.json')) as f:
+        assert sec2 in f.read()

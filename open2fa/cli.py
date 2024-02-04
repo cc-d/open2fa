@@ -243,13 +243,12 @@ def main(*args, **kwargs) -> None:
         handle_info(Op2FA, cli_args.secret)
     # remote
     elif cli_args.command == 'remote':
-        Op2FA = Open2FA(
-            o2fa_uuid=config.OPEN2FA_UUID, o2fa_api_url=config.OPEN2FA_API_URL
-        )
         if cli_args.remote_command.startswith('pus'):
             Op2FA.remote_push()
+            print(MSGS.PUSH_SUCCESS)
         elif cli_args.remote_command.startswith('pul'):
-            Op2FA.remote_pull()
+            secs = Op2FA.remote_pull()
+            print(MSGS.PULL_SUCCESS.format(secs))
         return
     elif cli_args.command == 'add':
         new_secret = Op2FA.add_secret(cli_args.secret, cli_args.name)

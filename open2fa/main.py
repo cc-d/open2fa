@@ -6,6 +6,7 @@ from pathlib import Path
 
 import requests as req
 from logfunc import logf
+from pyshared import truncstr, default_repr
 
 from . import config
 from . import ex as EX
@@ -181,5 +182,11 @@ class Open2FA:
                 remote.decrypt(sec['enc_secret']), sec['name']
             )
             new_secrets.append(new_sec)
-
+            self.secrets.append(new_sec)
+        self.write_secrets()
         return new_secrets
+
+    def __repr__(self) -> str:
+        return default_repr(
+            self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '
+        )

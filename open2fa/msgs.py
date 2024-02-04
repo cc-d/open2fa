@@ -35,3 +35,6 @@ INFO_STATUS = (
     'Open2FA ID: {}\n'
     'Open2FA Secret: {}\n'
 )
+
+PULL_SUCCESS = 'Pulled {} secret(s) from remote.'
+PUSH_SUCCESS = 'Pushed {} secret(s) to remote.'
