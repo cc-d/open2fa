@@ -83,8 +83,6 @@ def test_init(fake_remote_init, add_secret):
     with patch('sys.stdout', new=StringIO()) as fake_init:
         main(dir=_dir)
 
-    # Assertions about the generated code can go here
-    # For example, check if the output contains expected elements of a TOTP code
     assert fake_remote_init.called_once
 
 
