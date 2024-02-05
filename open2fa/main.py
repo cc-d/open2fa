@@ -216,7 +216,6 @@ class Open2FA:
                 delsec = s
                 break
 
-        print(delsec, self.secrets, secret, name, '@@@' * 10)
         if delsec is None:
             raise EX.DelNoNameSecFound()
 
