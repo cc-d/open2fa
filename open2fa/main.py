@@ -187,6 +187,54 @@ class Open2FA:
         self.write_secrets()
         return new_secrets
 
+    @logf()
+    def remote_delete(
+        self,
+        secret: TYPE.Optional[str] = None,
+        name: TYPE.Optional[str] = None,
+    ) -> int:
+        """Delete the remote secrets.
+        Args:
+            secret (str, optional): the secret to delete
+            name (str, optional): the name of the secret to delete
+        Returns:
+            int: the number of secrets deleted
+        """
+        if self.o2fa_uuid is None:
+            raise EX.NoUUIDError()
+
+        if secret is None and name is None:
+            raise EX.DelNoNameSec()
+
+        delsec = None
+
+        for s in self.secrets:
+            if secret is not None and s.secret == secret:
+                delsec = s
+                break
+            elif name is not None and s.name == name:
+                delsec = s
+                break
+
+        print(delsec, self.secrets, secret, name, '@@@' * 10)
+        if delsec is None:
+            raise EX.DelNoNameSecFound()
+
+        uhash = self.o2fa_uuid.o2fa_id
+        resp = apireq(
+            'DELETE',
+            'totps',
+            headers={'X-User-Hash': uhash},
+            api_url=self.remote_url,
+            data={
+                'totps': [{
+                    'name': getattr(delsec, 'name', None),
+                    'enc_secret': self.o2fa_uuid.remote.encrypt(delsec.secret),
+                }]
+            },
+        )
+        return int(resp.data['deleted'])
+
     def __repr__(self) -> str:
         return default_repr(
             self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '

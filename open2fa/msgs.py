@@ -38,3 +38,7 @@ INFO_STATUS = (
 
 PULL_SUCCESS = 'Pulled {} secret(s) from remote.'
 PUSH_SUCCESS = 'Pushed {} secret(s) to remote.'
+
+
+DEL_MIA_NAME_AND_SEC = 'No name or secret provided to delete.'
+DEL_SUCCESS = 'Deleted {} secret(s).'

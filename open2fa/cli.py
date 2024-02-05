@@ -128,6 +128,21 @@ def parse_args() -> argparse.Namespace:
     # Pull remote command
     remote_subparsers.add_parser('pull', help='Pull secrets from remote')
 
+    # Delete remote command
+    del_parser = remote_subparsers.add_parser(
+        'delete', help='Delete remote secrets', aliases=['d']
+    )
+    del_parser.add_argument(
+        'secret', type=str, help='The TOTP secret key to delete', nargs='?'
+    )
+    del_parser.add_argument(
+        '--name',
+        '-n',
+        type=str,
+        help='Name of the secret to delete',
+        dest='name',
+    )
+
     return parser.parse_args()
 
 
@@ -244,12 +259,20 @@ def main(*args, **kwargs) -> None:
     # remote
     elif cli_args.command == 'remote':
         if cli_args.remote_command.startswith('pus'):
-            Op2FA.remote_push()
-            print(MSGS.PUSH_SUCCESS)
+            pushed = Op2FA.remote_push()
+            print(MSGS.PUSH_SUCCESS.format(len(pushed)))
         elif cli_args.remote_command.startswith('pul'):
             secs = Op2FA.remote_pull()
             print(MSGS.PULL_SUCCESS.format(secs))
-        return
+        elif cli_args.remote_command.startswith('d'):
+            if cli_args.name is None and cli_args.secret is None:
+                print(MSGS.DEL_NO_NAME_SECRET)
+                return
+            del_count = Op2FA.remote_delete(
+                secret=cli_args.secret, name=cli_args.name
+            )
+            print(MSGS.DEL_SUCCESS.format(del_count))
+
     elif cli_args.command == 'add':
         new_secret = Op2FA.add_secret(cli_args.secret, cli_args.name)
         print(

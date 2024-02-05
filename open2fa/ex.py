@@ -17,3 +17,13 @@ class NoUUIDError(ValueError):
 class RemoteError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class DelNoNameSec(Exception):
+    def __init__(self, message: str = 'No secret or name provided'):
+        super().__init__(message)
+
+
+class DelNoNameSecFound(Exception):
+    def __init__(self, message: str = 'No secret found for that name/secret'):
+        super().__init__(message)

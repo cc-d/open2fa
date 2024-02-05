@@ -127,6 +127,7 @@ def parse_cli_arg_aliases(argv_args: TYPE.List[str]) -> TYPE.List[str]:
                 'push': dash_arg('pus').union(dash_arg('push')),
                 'pull': dash_arg('pul').union(dash_arg('pull')),
                 'init': dash_arg('ini').union(dash_arg('init')),
+                'delete': dash_arg('del').union(dash_arg('delete')),
             }
         if use_alias_map:
             for cmd, aliases in use_alias_map.items():
