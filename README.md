@@ -1,12 +1,25 @@
 # open2fa
 
-Open2FA is a 100% LIBRE tool for generating Two-Factor Authentication (2FA) TOTP codes.
+[open2fa.liberfy.ai](https://open2fa.liberfy.ai) NOW LIVE
 
-As of now (v0.1.0) it is only a basic CLI, but in the future an api, webui, and .apk are planned to enable (optional, user-configured) 2FA across multiple devices in a manner that respects user privacy and freedom.
+Open2FA is a 100% LIBRE tool for generating Two-Factor Authentication (2FA) (TOTP) codes, with optional, secure, remote sync/restore/etc capabilities, as well as optional webui 2FA code generation.
 
-## File Locations and Environment Variables
+All code can be found at:
 
-**Secret Key Storage**: TOTP secret keys are stored in the directory specified by the `OPEN2FA_DIR` environment variable. By default, this is set to `.open2fa` in the user's home directory, with secure permissions that only allow the user to read and write to/from the directory.
+[CLI repo](https://github.com/cc-d/open2fa)
+
+[API/WebUI repo](https://github.com/cc-d/open2fa-server)
+
+For information as to how the remote capabilities work, see [open2fa.liberfi.ai](https://open2fa.liberfy.ai)
+
+## Features
+
+- **CLI 2FA Code Generation**: Generate 2FA codes from the command line from TOTP secret keys stored either locally or remotely.
+- **Secure Remote Capabilitites**: All remotely stored TOTP secrets are stored encrypted and are only decrypted client side.
+- **Easily restore TOTP secrets**: Easily transfer and restore TOTP secrets from any device from only a UUID
+- **WebUI 2FA Code Generation**: Generate 2FA codes from the webui using the remotely stored encrypted TOTP secret keys from any device, even if the device does not have either the open2fa CLI or the TOTP secrets stored locally.
+- **Host your own API**: You can easily choose to host your own open2fa server and use it with the open2fa CLI.
+- **Open Source**: Open2FA is 100% open source and is both free as in freedom and free as in beer.
 
 ## Installation
 
@@ -16,100 +29,165 @@ Install the CLI using `pip`:
 pip install open2fa
 ```
 
-Install with dev dependencies:
+If wanting to do development work, install with dev dependencies:
 
 ```bash
 pip install 'open2fa[dev]'
 ```
 
-## CLI Usage
+## Configuration
 
-1. **Add a TOTP Secret**:
+**Environment Variables**:
 
-   ```bash
-   open2fa add secret I65VU7K5ZQL7WB4E -n aTESTTESTTESTTESTTESTTEST334434
-   ```
+- `OPEN2FA_DIR`: The directory where TOTP secrets and the Open2FA UUID are stored. Defaults to `.open2fa` in the user's home directory.
 
-   Example Output:
+- `OPEN2FA_API_URL`: The URL of the Open2FA API instance to use. Defaults to `https://open2fa.liberfy.ai`.
 
-   ```
-   Added secret: aTESTTESTTESTTESTTESTTEST334434 I65VU7K5ZQL7WB4E
-   ```
+- `OPEN2FA_UUID` (Optional): Instead of using the `open2fa.uuid` file stored in `OPEN2FA_DIR`, you can set the `OPEN2FA_UUID` environment variable to the UUID you wish to use.
 
-2. **Delete a TOTP Secret**:
+## Default File Locations
 
-   ```bash
-   py3 -m open2fa.cli d aTESTTESTTESTTESTTESTTEST
+- **Secrets File**: The TOTP secrets are stored in `OPEN2FA_DIR/secrets.json`.
+- **UUID File**: The Open2FA UUID is stored in `OPEN2FA_DIR/open2fa.uuid`, but can also be set using the `OPEN2FA_UUID` environment variable. This UUID is used to identify the user and encrypt/decrypt their remotely stored secrets.
 
-   Are you sure you want to remove aTESTTESTTESTTESTTESTTEST I65VU7K5ZQL7WB4E? (y/n): y
-   Deleted 1 secret(s).
-   ```
+## CLI Usage ( local )
 
-   Example Output:
+You can see the full list of commands and options by running `open2fa -h` or `open2fa --help`.
 
-   ```
-   Deleted key for 'NewOrgName'
-   ```
+**Add a TOTP Secret**:
 
-3. **List TOTP Secrets**:
+```bash
+open2fa add I65VU7K5ZQL7WB4E -n TESTKEY123
+```
 
-   ```bash
-   open2fa list
-   ```
+**Delete a TOTP Secret**:
 
-   Example Output:
+```bash
+open2fa delete -n TESTKEY123
+```
 
-   ```
-   Name                            Secret
-   -------------------------       -----
-   aTESTTESTTESTTESTTESTTEST       I...E
-   None                            I...E
-   pypi                            A...B
-   TESTTESTTESTTESTTESTTEST        I...E
-   TESTTESTTESTTESTTESTTEST2       I...E
-   ```
+**List All TOTP Secrets**:
 
-   To show the secret keys, use the `-s` flag:
+```bash
+open2fa list
+```
 
-   ```bash
-   open2fa list -s
+Example Output:
 
-   Name                                    Secret
-   -------------------------------    --------------------------------
-   aTESTTESTTESTTESTTESTTEST          I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST3         I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST33        I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST334       I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST3344      I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST33443     I65VU7K5ZQL7WB4E
-   aTESTTESTTESTTESTTESTTEST334434    I65VU7K5ZQL7WB4E
-   None                               I65VU7K5ZQL7WB4E
-   pypi                               CENSORED
-   TESTTESTTESTTESTTESTTEST           I65VU7K5ZQL7WB4E
-   TESTTESTTESTTESTTESTTEST2          I65VU7K5ZQL7WB4E
-   ```
+```
+Name         Secret
+-------      -----
+Secret1      I...E
+Secret2      I...E
+Secret3      A...B
+```
 
-4. **Generate 2FA Codes**:
+To show the secret keys, use the `-s` flag:
 
-   Generate codes for keys saved in `OPEN2FA_DIR/secrets.json`:
+```bash
+open2fa list -s
 
-   ```bash
-   open2fa generate
-   Name                         Code      Next Code
-   -------------------------    ------    ---------
-   aTESTTESTTESTTESTTESTTEST    490992    2.620
-   None                         490992    2.620
-   pypi                         216241    2.620
-   TESTTESTTESTTESTTESTTEST     490992    2.620
-   TESTTESTTESTTESTTESTTEST2    490992    2.620
-   ```
+Name       Secret
+-------    ------
+Secret1    I65VU7K5ZQL7WB4E
+Secret2    I65VU7K5ZQL7WB4E
+Secret3    I65VU7K5ZQL7WB4E
+```
 
-   Tokens will continue to be generated until the user exits the program with `Ctrl+C`.
+**Generate 2FA Codes**:
 
-## How it Works
+Generate codes for keys saved in `OPEN2FA_DIR/secrets.json`:
 
-- **Secret Key Management**: Keys are added, retrieved, or deleted from the `OPEN2FA_DIR`.
-- **Token Generation**: Generates TOTP tokens using the `generate_totp_2fa_code` function in `utils.py`, which implements the standard TOTP algorithm.
+```bash
+open2fa generate
+
+Name       Code      Next Code
+-------    ------    ---------
+Secret1    490992    2.620
+Secret2    490992    2.620
+Secret3    216241    2.620
+```
+
+Tokens will continue to be generated until the user exits the program with `Ctrl+C`.
+
+**Show Open2FA Info/Status/Secrets**:
+
+```bash
+open2fa info
+```
+
+Example Output:
+
+```
+========== Open2FA INFO/STATUS ==========
+(add -s to show uncensored secrets)
+
+Open2FA Directory: /Users/mym2/.open2fa
+Open2FA Remote API URL: http://localhost:8000/api/v1
+Number of secrets: 11
+Open2FA UUID: 0...
+Open2FA ID: X...
+Open2FA Secret: Q...
+```
+
+## CLI Usage ( remote )
+
+When initializing the remote capabilities of the open2fa CLI, a UUID will be generated and stored in `OPEN2FA_DIR/open2fa.uuid`. This UUID is used to identify the user and encrypt/decrypt their remotely stored secrets. As long as the user has access to this UUID, they can restore their TOTP secrets from any device, as well as generate 2FA codes from the webui.
+
+For usage with the webui, both the Open2FA ID and the Open2FA Secret are required. These can be determined from `open2fa info` after initializing the remote capabilities of the open2fa CLI.
+
+### **Initialize the Remote Capabilities of the Open2FA Client**:
+
+```bash
+open2fa init
+```
+
+Example Output:
+
+```
+open2fa remote init
+
+Do you want to initialize remote capabilities of Open2FA? (y/n): y
+
+Remote capabilities initialized with UUID: 0e4742ef-780b-406d-8651-7766cf67be3f
+It is recommended to save this UUID somewhere safe and use as an environment variable OPEN2FA_UUID.
+
+========== Open2FA INFO/STATUS ==========
+(add -s to show uncensored secrets)
+
+Open2FA Directory: /Users/mym2/.open2fa
+Open2FA Remote API URL: http://localhost:8000/api/v1
+Number of secrets: 11
+Open2FA UUID: 0...
+Open2FA ID: X...
+Open2FA Secret: Q...
+```
+
+In this example:
+
+- The Open2FA UUID is `0e4742ef-780b-406d-8651-7766cf67be3f`
+- The Open2FA ID is `XF1628BGJeibVv8C9UacG4`
+- The Open2FA Secret is `QGcst74V9JXnyBnQmWSoCx`
+
+### Remote Commands
+
+**Push TOTP Secrets to the remote server**:
+
+```bash
+open2fa push
+```
+
+**Pull TOTP Secrets from the remote server**:
+
+```bash
+open2fa pull
+```
+
+**Delete a TOTP Secret from the remote server**:
+
+```bash
+open2fa delete -n TESTKEY123
+```
 
 ## Testing
 
@@ -133,3 +211,13 @@ open2fa/utils.py           3      0   100%
 ----------------------------------------------------
 TOTAL                    295     48    84%
 ```
+
+The tests are not complete, and need to be expanded.
+
+## Contributing
+
+Feel free to open an issue or pull request. If you are opening a pull request, please make sure to run the tests and ensure that the coverage does not decrease.
+
+## License
+
+MIT

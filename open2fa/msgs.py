@@ -10,7 +10,7 @@ INIT_CONFIRM = (
     'Do you want to initialize remote capabilities of Open2FA? (y/n): '
 )
 INIT_SUCCESS = (
-    'Remote capabilities initialized with UUID: {}\n'
+    '\nRemote capabilities initialized with UUID: {}\n'
     'It is recommended to save this UUID somewhere safe '
     'and use as an environment variable OPEN2FA_UUID.'
 )

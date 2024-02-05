@@ -202,11 +202,12 @@ def handle_remote_init(op2fa: Open2FA) -> None:
         if user_response.lower() == 'y':
             # Generate new UUID and write to file
             new_uuid = str(uuid.uuid4())
-            print(uuid_file_path, '@' * 100)
             with open(uuid_file_path, 'w') as uuid_file:
                 uuid_file.write(new_uuid)
             os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
             print(MSGS.INIT_SUCCESS.format(new_uuid))
+            handle_info(Open2FA(open2fa_dir, new_uuid, config.OPEN2FA_API_URL))
+
         else:
             print(MSGS.INIT_FAIL)
 
@@ -215,7 +216,10 @@ def handle_remote_init(op2fa: Open2FA) -> None:
 def handle_info(op2fa: Open2FA, show_secrets: bool = False) -> None:
     """Prints the Open2FA info."""
     o_dir = op2fa.o2fa_dir
-    o_api_url = op2fa.remote_url
+    if hasattr(op2fa, 'o2fa_api_url'):
+        o_api_url = op2fa.o2fa_api_url
+    else:
+        o_api_url = config.OPEN2FA_API_URL
     o_num_secrets = len(op2fa.secrets)
     o_uuid_str, o_id, o_secret = None, None, None
     if op2fa.o2fa_uuid:
@@ -250,14 +254,13 @@ def main(*args, **kwargs) -> None:
 
     Op2FA = Open2FA(_dir, _uuid, _api_url)
 
-    # init
-    if cli_args.command == 'init':
-        handle_remote_init(Op2FA)
     # info
-    elif cli_args.command == 'info':
+    if cli_args.command == 'info':
         handle_info(Op2FA, cli_args.secret)
     # remote
     elif cli_args.command == 'remote':
+        if cli_args.remote_command.startswith('ini'):
+            handle_remote_init(Op2FA)
         if cli_args.remote_command.startswith('pus'):
             pushed = Op2FA.remote_push()
             print(MSGS.PUSH_SUCCESS.format(len(pushed)))

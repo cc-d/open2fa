@@ -19,19 +19,23 @@ skip_magic_trailing_comma = true
 preview = true
 target-version = ['py37']
 
-##### project #####
 [project]
+license = "MIT"
 name = "open2fa"
 version = "1.0.0"
 authors = [
   { name="Cary Carter", email="ccarterdev@gmail.com" },
 ]
-description = "A 2FA CLI tool for generating 2FA codes using TOTP secrets, with optional SECURE remote sync and backup/restore options, allowing code generation from any device."
-
+description = "A 2FA CLI tool for generating 2FA codes using TOTP secrets, with an optional SECURE remote api, and an optional web ui enabling 2FA code generation from any device"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
@@ -48,8 +52,11 @@ dependencies = [
 open2fa = "open2fa.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/cc-d/open2fa"
+Homepage = "https://open2fa.liberfy.ai"
+Repository = "https://github.com/cc-d/open2fa"
 Issues = "https://github.com/cc-d/open2fa/issues"
+Server = "https://github.com/cc-d/open2fa-server"
+Documentation = "https://github.com/cc-d/open2fa"
 
 [project.optional-dependencies]
 dev = [
