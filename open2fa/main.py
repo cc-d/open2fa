@@ -145,8 +145,6 @@ class Open2FA:
         enc_secrets = [
             {'enc_secret': remote.encrypt(s.secret), 'name': s.name}
             for s in self.secrets
-            # remove before deployment
-            if str(s.name).lower() != 'pypi'
         ]
         r = apireq(
             'POST',
