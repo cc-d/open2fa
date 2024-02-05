@@ -20,7 +20,6 @@ preview = true
 target-version = ['py37']
 
 [project]
-license = "MIT"
 name = "open2fa"
 version = "1.0.0"
 authors = [
