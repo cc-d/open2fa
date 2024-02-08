@@ -221,3 +221,7 @@ Feel free to open an issue or pull request. If you are opening a pull request, p
 ## License
 
 MIT
+
+## Contact
+
+ccarterdev@gmail.com
