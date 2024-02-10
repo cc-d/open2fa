@@ -199,17 +199,17 @@ or by running the vscode pytest launch configuration with f5.
 Name                   Stmts   Miss  Cover   Missing
 ----------------------------------------------------
 open2fa/__init__.py        0      0   100%
-open2fa/cli.py            79     13    84%   168, 171-192, 196-197, 204
-open2fa/cli_utils.py      40      0   100%
-open2fa/common.py         70     27    61%   32-34, 37, 46-57, 66-77, 88-98, 101, 121, 124
-open2fa/config.py         11      2    82%   11-12
-open2fa/ex.py              3      1    67%   3
-open2fa/main.py           55      4    93%   56-57, 90, 101
-open2fa/msgs.py            4      0   100%
-open2fa/totp.py           30      1    97%   24
-open2fa/utils.py           3      0   100%
+open2fa/cli.py           151     21    86%   186, 198-214, 224, 273-279, 320-321, 330
+open2fa/cli_utils.py      60      0   100%
+open2fa/common.py         70      1    99%   123
+open2fa/config.py         12      0   100%
+open2fa/ex.py             15      2    87%   3, 19
+open2fa/main.py          116     15    87%   64-65, 98-102, 105-108, 169, 212-213, 215-216, 221-234
+open2fa/msgs.py           18      0   100%
+open2fa/totp.py           30      0   100%
+open2fa/utils.py          31     15    52%   20-25, 28, 52-63, 68
 ----------------------------------------------------
-TOTAL                    295     48    84%
+TOTAL                    503     54    89%
 ```
 
 The tests are not complete, and need to be expanded.

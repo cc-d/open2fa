@@ -206,7 +206,9 @@ def handle_remote_init(op2fa: Open2FA) -> None:
                 uuid_file.write(new_uuid)
             os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
             print(MSGS.INIT_SUCCESS.format(new_uuid))
-            handle_info(Open2FA(open2fa_dir, new_uuid, config.OPEN2FA_API_URL))
+            handle_info(
+                Open2FA(open2fa_dir, new_uuid, config.OPEN2FA_API_URL, True)
+            )
 
         else:
             print(MSGS.INIT_FAIL)
@@ -222,7 +224,7 @@ def handle_info(op2fa: Open2FA, show_secrets: bool = False) -> None:
         o_api_url = config.OPEN2FA_API_URL
     o_num_secrets = len(op2fa.secrets)
     o_uuid_str, o_id, o_secret = None, None, None
-    if op2fa.o2fa_uuid:
+    if hasattr(op2fa, 'o2fa_uuid'):
         o_uuid = op2fa.o2fa_uuid
         if o_uuid:
             if o_uuid.uuid:

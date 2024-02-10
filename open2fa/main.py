@@ -46,9 +46,10 @@ class Open2FA:
         ]
         self.secrets.sort(key=lambda s: str(s.name).lower())
 
+        self.o2fa_uuid, self.o2fa_api_url = None, None
         if o2fa_uuid is not None:
             self.o2fa_uuid = O2FAUUID(o2fa_uuid)
-            self.remote_url = o2fa_api_url or config.OPEN2FA_API_URL
+            self.o2fa_api_url = o2fa_api_url
 
     @logf()
     def add_secret(self, secret: str, name: str) -> TOTPSecret:
@@ -137,7 +138,7 @@ class Open2FA:
     @logf()
     def remote_push(self) -> TYPE.List[TOTPSecret]:
         """Push the secrets to the remote server."""
-        if self.o2fa_uuid is None:
+        if getattr(self, 'o2fa_uuid', None) is None:
             raise EX.NoUUIDError()
 
         remote = self.o2fa_uuid.remote
@@ -151,7 +152,7 @@ class Open2FA:
             'totps',
             data={'totps': enc_secrets},
             headers={'X-User-Hash': uhash},
-            api_url=self.remote_url,
+            api_url=self.o2fa_api_url,
         )
         new_secrets = []
         for sec in r.data['totps']:
@@ -173,7 +174,7 @@ class Open2FA:
             'GET',
             'totps',
             headers={'X-User-Hash': uhash},
-            api_url=self.remote_url,
+            api_url=self.o2fa_api_url,
         )
         new_secrets = []
         for sec in api_resp.data['totps']:
@@ -222,7 +223,7 @@ class Open2FA:
             'DELETE',
             'totps',
             headers={'X-User-Hash': uhash},
-            api_url=self.remote_url,
+            api_url=self.o2fa_api_url,
             data={
                 'totps': [{
                     'name': getattr(delsec, 'name', None),
