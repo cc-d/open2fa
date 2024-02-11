@@ -12,6 +12,12 @@ The -s tip text will no longer be displayed if -s was passed as an argument
 
 Added more tests/fixtures
 
-Pinned versions of dependencies
+Pinned versions of dependencies in pyproject.toml and requirements.txt
 
 Added changelog to repo and updated README.md to link to it
+
+## 1.0.5
+
+Fixed a bug where the -s flag for info/status was not working correctly
+
+Updated tests/fixtures with a regression test added for this plus general test improvements, most tests were rewritten

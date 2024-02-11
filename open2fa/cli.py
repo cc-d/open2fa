@@ -95,6 +95,7 @@ def parse_args() -> argparse.Namespace:
         dest='show_secrets',
         action='store_true',
         help='Show full secrets',
+        default=False,
     )
 
     # remote command
@@ -118,7 +119,7 @@ def parse_args() -> argparse.Namespace:
         '--secret',
         '--secrets',
         help='Show all info/status info without censorship',
-        dest='secret',
+        dest='show_secrets',
         action='store_true',
         default=False,
     )
@@ -223,27 +224,26 @@ def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
         o_api_url = op2fa.o2fa_api_url
     else:
         o_api_url = config.OPEN2FA_API_URL
+
+    def itrunc(s):
+        if s is None:
+            return s
+        return str(s)[0] + '...' if show_secrets is False else str(s)
+
     o_num_secrets = len(op2fa.secrets)
+
     o_uuid_str, o_id, o_secret = None, None, None
-    if hasattr(op2fa, 'o2fa_uuid'):
+
+    if hasattr(op2fa, 'o2fa_uuid') and op2fa.o2fa_uuid is not None:
         o_uuid = op2fa.o2fa_uuid
         if o_uuid:
-            if o_uuid.uuid:
-                o_uuid_str = str(o_uuid.uuid)
-                if show_secrets is False:
-                    o_uuid_str = o_uuid_str[0:1] + '...'
-            if o_uuid.o2fa_id:
-                o_id = o_uuid.o2fa_id
-                if show_secrets is False:
-                    o_id = o_id[0:1] + '...'
-            if o_uuid.remote:
-                o_secret = o_uuid.remote.b58
-                if show_secrets is False:
-                    o_secret = o_secret[0:1] + '...'
+            o_uuid_str = itrunc(o_uuid.uuid)
+            o_id = itrunc(o_uuid.o2fa_id)
+            o_secret = itrunc(o_uuid.remote.b58)
 
     msg = MSGS.INFO_STATUS
-    if show_secrets is False:
-        msg = msg.replace(MSGS.INFO_SEC_TIP, '')
+    if show_secrets is True:
+        msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
 
     print(
         msg.format(o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret)
@@ -254,18 +254,21 @@ def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
 def main(*args, **kwargs) -> Open2FA:
     cli_args = parse_args()
 
-    _dir = kwargs.get('dir', config.OPEN2FA_DIR)
-    _uuid = kwargs.get('uuid', config.OPEN2FA_UUID)
-    _api_url = kwargs.get('api_url', config.OPEN2FA_API_URL)
+    _dir = config.OPEN2FA_DIR if 'dir' not in kwargs else kwargs['dir']
+    _uuid = config.OPEN2FA_UUID if 'uuid' not in kwargs else kwargs['uuid']
+    _api_url = (
+        config.OPEN2FA_API_URL
+        if 'api_url' not in kwargs
+        else kwargs['api_url']
+    )
 
-    Op2FA = Open2FA(_dir, _uuid, _api_url)
-
-    show_secrets = '-s' in sys.argv
-
+    Op2FA = Open2FA(o2fa_dir=_dir, o2fa_uuid=_uuid, o2fa_api_url=_api_url)
     # info
     if cli_args.command == 'info':
         # check if info -s flag is set
-        handle_info(Op2FA, show_secrets)
+        # use the show_secrets flag to determine if secrets should be shown
+        # do NOT use cli_args.secret
+        handle_info(Op2FA, cli_args.show_secrets)
     # remote
     elif cli_args.command == 'remote':
         if cli_args.remote_command.startswith('ini'):
@@ -314,7 +317,7 @@ def main(*args, **kwargs) -> Open2FA:
         for s in Op2FA.secrets:
             _sec = (
                 sec_trunc(s.secret).ljust(max_secret)
-                if show_secrets is False
+                if cli_args.show_secrets is False
                 else s.secret.ljust(max_secret)
             )
             print(
