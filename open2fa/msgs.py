@@ -4,7 +4,7 @@ SECRET_NOT_ADDED = 'Key not added.'
 CONFIRM_REMOVE = 'Are you sure you want to remove {} {}? (y/n): '
 
 
-INIT_EVAR_SET = 'Remote init environment variable already set.'
+INIT_UUID_SET = 'Open2FA already initialized with an UUID'
 INIT_FOUND_UUID = 'Found existing UUID file.'
 INIT_CONFIRM = (
     'Do you want to initialize remote capabilities of Open2FA? (y/n): '
@@ -25,9 +25,12 @@ ADD_ALREADY_EXISTS = (
 )
 
 _title_pad = '=' * 10
+
+INFO_SEC_TIP = '(add -s to show uncensored secrets)'
+
 INFO_STATUS = (
     '\n' + _title_pad + ' Open2FA INFO/STATUS ' + _title_pad + '\n'
-    '(add -s to show uncensored secrets)\n\n'
+    '' + INFO_SEC_TIP + '\n\n'
     'Open2FA Directory: {}\n'
     'Open2FA Remote API URL: {}\n'
     'Number of secrets: {}\n'

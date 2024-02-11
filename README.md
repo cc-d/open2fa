@@ -12,6 +12,8 @@ All code can be found at:
 
 For information as to how the remote capabilities work, see [open2fa.liberfi.ai](https://open2fa.liberfy.ai)
 
+See the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) to follow ongoing development.
+
 ## Features
 
 - **CLI 2FA Code Generation**: Generate 2FA codes from the command line from TOTP secret keys stored either locally or remotely.
@@ -199,17 +201,17 @@ or by running the vscode pytest launch configuration with f5.
 Name                   Stmts   Miss  Cover   Missing
 ----------------------------------------------------
 open2fa/__init__.py        0      0   100%
-open2fa/cli.py           151     21    86%   186, 198-214, 224, 273-279, 320-321, 330
+open2fa/cli.py           161     16    90%   185, 197, 199, 213-215, 225, 274-275, 280-286, 328-329, 339
 open2fa/cli_utils.py      60      0   100%
 open2fa/common.py         70      1    99%   123
 open2fa/config.py         12      0   100%
 open2fa/ex.py             15      2    87%   3, 19
-open2fa/main.py          116     15    87%   64-65, 98-102, 105-108, 169, 212-213, 215-216, 221-234
-open2fa/msgs.py           18      0   100%
+open2fa/main.py          116     15    87%   69-70, 103-107, 110-113, 174, 217-218, 220-221, 226-239
+open2fa/msgs.py           19      0   100%
 open2fa/totp.py           30      0   100%
 open2fa/utils.py          31     15    52%   20-25, 28, 52-63, 68
 ----------------------------------------------------
-TOTAL                    503     54    89%
+TOTAL                    514     49    90%
 ```
 
 The tests are not complete, and need to be expanded.

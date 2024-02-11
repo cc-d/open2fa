@@ -92,10 +92,9 @@ def parse_args() -> argparse.Namespace:
         '-s',
         '--secrets',
         '--secret',
-        dest='secrets',
+        dest='show_secrets',
         action='store_true',
         help='Show full secrets',
-        default=False,
     )
 
     # remote command
@@ -187,14 +186,15 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
 
 
 @logf()
-def handle_remote_init(op2fa: Open2FA) -> None:
+def handle_remote_init(op2fa: Open2FA) -> Open2FA:
     """Handles initialization of remote capabilities."""
     # Check if OPEN2FA_UUID is set or exists
-    open2fa_dir = config.OPEN2FA_DIR
+    open2fa_dir = op2fa.o2fa_dir or config.OPEN2FA_DIR
     uuid_file_path = os.path.join(open2fa_dir, 'open2fa.uuid')
+    api_url = op2fa.o2fa_api_url or config.OPEN2FA_API_URL
 
-    if config.OPEN2FA_UUID:
-        print(MSGS.INIT_EVAR_SET)
+    if op2fa.o2fa_uuid is not None:
+        print(MSGS.INIT_UUID_SET)
     elif os.path.exists(uuid_file_path):
         print(MSGS.INIT_FOUND_UUID)
     else:
@@ -206,16 +206,17 @@ def handle_remote_init(op2fa: Open2FA) -> None:
                 uuid_file.write(new_uuid)
             os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
             print(MSGS.INIT_SUCCESS.format(new_uuid))
-            handle_info(
-                Open2FA(open2fa_dir, new_uuid, config.OPEN2FA_API_URL, True)
-            )
-
+            op2fa = Open2FA(open2fa_dir, new_uuid, api_url)
+            handle_info(op2fa, True)
+            return op2fa
         else:
             print(MSGS.INIT_FAIL)
 
+    return op2fa
+
 
 @logf()
-def handle_info(op2fa: Open2FA, show_secrets: bool = False) -> None:
+def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
     """Prints the Open2FA info."""
     o_dir = op2fa.o2fa_dir
     if hasattr(op2fa, 'o2fa_api_url'):
@@ -229,25 +230,28 @@ def handle_info(op2fa: Open2FA, show_secrets: bool = False) -> None:
         if o_uuid:
             if o_uuid.uuid:
                 o_uuid_str = str(o_uuid.uuid)
-                if not show_secrets:
+                if show_secrets is False:
                     o_uuid_str = o_uuid_str[0:1] + '...'
             if o_uuid.o2fa_id:
                 o_id = o_uuid.o2fa_id
-                if not show_secrets:
+                if show_secrets is False:
                     o_id = o_id[0:1] + '...'
             if o_uuid.remote:
                 o_secret = o_uuid.remote.b58
-                if not show_secrets:
+                if show_secrets is False:
                     o_secret = o_secret[0:1] + '...'
+
+    msg = MSGS.INFO_STATUS
+    if show_secrets is False:
+        msg = msg.replace(MSGS.INFO_SEC_TIP, '')
+
     print(
-        MSGS.INFO_STATUS.format(
-            o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret
-        )
+        msg.format(o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret)
     )
 
 
 @logf()
-def main(*args, **kwargs) -> None:
+def main(*args, **kwargs) -> Open2FA:
     cli_args = parse_args()
 
     _dir = kwargs.get('dir', config.OPEN2FA_DIR)
@@ -256,13 +260,16 @@ def main(*args, **kwargs) -> None:
 
     Op2FA = Open2FA(_dir, _uuid, _api_url)
 
+    show_secrets = '-s' in sys.argv
+
     # info
     if cli_args.command == 'info':
-        handle_info(Op2FA, cli_args.secret)
+        # check if info -s flag is set
+        handle_info(Op2FA, show_secrets)
     # remote
     elif cli_args.command == 'remote':
         if cli_args.remote_command.startswith('ini'):
-            handle_remote_init(Op2FA)
+            Op2FA = handle_remote_init(Op2FA)
         if cli_args.remote_command.startswith('pus'):
             pushed = Op2FA.remote_push()
             print(MSGS.PUSH_SUCCESS.format(len(pushed)))
@@ -291,27 +298,28 @@ def main(*args, **kwargs) -> None:
         code_gen(Op2FA, cli_args.repeat)
     # list
     elif cli_args.command == 'list':
-        longest_name = max([len(str(s.name)) for s in Op2FA.secrets])
-        longest_secret = max([
-            len(str(s.secret)) if cli_args.secrets is True else 5
-            for s in Op2FA.secrets
-        ])
-        longest = max(longest_name, longest_secret)
+        max_name, max_secret = 4, 6
+        if len(Op2FA.secrets) > 0:
+            max_name = max([len(str(s.name)) for s in Op2FA.secrets])
+            max_secret = max([
+                len(str(s.secret)) if '-s' in sys.argv else 5
+                for s in Op2FA.secrets
+            ])
+
         print(
-            '\n'
-            + '    '.join(['Name'.ljust(longest), 'Secret'.ljust(longest)])
+            '\n' + 'Name'.ljust(max_name) + '    ' + 'Secret'.ljust(max_secret)
         )
 
-        print('%s    %s' % ('-' * longest_name, '-' * longest_secret))
+        print('%s    %s' % ('-' * max_name, '-' * max_secret))
         for s in Op2FA.secrets:
             _sec = (
-                sec_trunc(s.secret).ljust(longest_secret)
-                if cli_args.secrets is False
-                else s.secret.ljust(longest_secret)
+                sec_trunc(s.secret).ljust(max_secret)
+                if show_secrets is False
+                else s.secret.ljust(max_secret)
             )
             print(
                 '%s    %s'
-                % (str(s.name).ljust(longest_name), _sec.ljust(longest_secret))
+                % (str(s.name).ljust(max_name), _sec.ljust(max_secret))
             )
         print()
     # delete
@@ -324,6 +332,7 @@ def main(*args, **kwargs) -> None:
                 Op2FA.remove_secret(cli_args.name, cli_args.secret)
             )
         )
+    return Op2FA
 
 
 if __name__ == "__main__":

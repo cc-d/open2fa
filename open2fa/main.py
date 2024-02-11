@@ -46,10 +46,15 @@ class Open2FA:
         ]
         self.secrets.sort(key=lambda s: str(s.name).lower())
 
-        self.o2fa_uuid, self.o2fa_api_url = None, None
+        self.o2fa_uuid = None
         if o2fa_uuid is not None:
             self.o2fa_uuid = O2FAUUID(o2fa_uuid)
-            self.o2fa_api_url = o2fa_api_url
+
+        self.o2fa_api_url = (
+            o2fa_api_url
+            if o2fa_api_url is not None
+            else config.OPEN2FA_API_URL
+        )
 
     @logf()
     def add_secret(self, secret: str, name: str) -> TOTPSecret:

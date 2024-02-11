@@ -1,11 +1,11 @@
+base58==2.1.1
 black
 build
-cryptography
+cryptography<=41.0.7
 flake8
 isort
-logfunc==1.9.1
-base58==2.1.1
-pyshared
+logfunc<=2.1,>=1.9.1
+pyshared<=1.2.0
 pytest
 pytest-cov
 pytest-mock

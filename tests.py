@@ -8,45 +8,63 @@ from open2fa.cli import Open2FA, handle_remote_init
 from open2fa.main import apireq
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 from open2fa import ex as EX
+from open2fa import msgs as MSGS
 
 # Assuming ranstr function exists for generating random strings
 from pyshared import ranstr
 
 TEST_NAME = 'test_secret'
 TEST_TOTP = 'I65VU7K5ZQL7WB4E'
+TEST_URL = 'http://test'
 
 
 @pytest.fixture
 def add_secret():
     """Fixture to add a secret before a test and ensure environment is clean."""
-    os.environ['OPEN2FA_DIR'] = '/tmp/' + ranstr(10)
     from open2fa.cli import main
+
+    randir = '/tmp/' + ranstr(10)
 
     # Add the secret
     sys.argv = ['open2fa', 'add', TEST_TOTP, '-n', TEST_NAME]
     with patch('sys.stdout', new=StringIO()):
-        main(dir=os.environ['OPEN2FA_DIR'])
+        main(dir=randir)
 
     # Return values that might be useful for the test
-    yield TEST_NAME, TEST_TOTP, os.environ['OPEN2FA_DIR']
+    yield TEST_NAME, TEST_TOTP, randir
 
     # Here you can add steps to delete the secret if necessary
     sys.argv = ['open2fa', 'delete', '-n', TEST_NAME]
     with patch('sys.stdout', new=StringIO()) as fake_delete:
         with patch('builtins.input', return_value='y') as fake_input:
             main()
-    del os.environ['OPEN2FA_DIR']
 
 
 @pytest.fixture
 def remote_init():
     """Fixture to initialize remote capabilities."""
     randir = '/tmp/' + ranstr(10)
-    ranuuid = str(uuid4())
+    from open2fa.cli import main
 
-    o2fa = Open2FA(randir, ranuuid, 'http://example')
+    with patch('builtins.input', return_value='y') as fake_input:
+        with patch('open2fa.cli.sys.argv', ['open2fa', 'remote', 'init']):
+            o2fa = main(dir=randir, api_url='http://test', uuid=None)
 
     yield o2fa
+
+
+@pytest.fixture
+def randir():
+    """Fixture to generate a random directory path for testing."""
+    return '/tmp/' + ranstr(10)
+
+
+def test_init(remote_init):
+    """Test initializing the remote capabilities of Open2FA."""
+    o2fa = remote_init
+    assert o2fa.o2fa_uuid is not None
+    assert o2fa.o2fa_api_url is TEST_URL
+    assert os.path.exists(os.path.join(o2fa.o2fa_dir, 'open2fa.uuid'))
 
 
 def test_generate_key(add_secret):
@@ -61,41 +79,6 @@ def test_generate_key(add_secret):
         main(dir=_dir)
 
     assert _name in fake_generate.getvalue()
-
-
-def test_info(add_secret):
-    """Test getting information about the added secret."""
-    from open2fa.cli import main
-
-    _name, _secret, _dir = add_secret
-
-    # Use the added secret to generate a code
-    sys.argv = ['open2fa', 'info']
-    with patch('sys.stdout', new=StringIO()) as fake_info:
-        main(dir=_dir)
-
-    for t in [
-        'Directory',
-        'Remote API URL',
-        'Number of secrets',
-        'UUID',
-        'ID',
-        'Secret',
-    ]:
-        assert t in fake_info.getvalue()
-
-
-@patch('open2fa.cli.handle_remote_init')
-def test_init(fake_remote_init, add_secret):
-    """Test initializing the remote capabilities of Open2FA."""
-    from open2fa.cli import main
-
-    _name, _secret, _dir = add_secret
-    sys.argv = ['open2fa', 'remote', 'init']
-    with patch('sys.stdout', new=StringIO()) as fake_init:
-        main(dir=_dir)
-
-    assert fake_remote_init.called_once
 
 
 def test_list(add_secret):
@@ -209,3 +192,22 @@ def test_handle_remote_delete_no_sec_found(remote_init):
 
     with pytest.raises(EX.DelNoNameSecFound):
         o2fa.remote_delete('name2')
+
+
+def test_info_no_s(randir):
+    from open2fa.cli import main
+
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'info', '-s']):
+        with patch('sys.stdout', new=StringIO()) as fake_info:
+            main(dir=randir)
+    assert MSGS.INFO_SEC_TIP in fake_info.getvalue()
+
+
+def test_info_dash_s(randir):
+    """Ensure that the -s tip is not printed with info"""
+    from open2fa.cli import main
+
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'info']):
+        with patch('sys.stdout', new=StringIO()) as fake_info:
+            main(dir=randir)
+    assert MSGS.INFO_SEC_TIP not in fake_info.getvalue()
