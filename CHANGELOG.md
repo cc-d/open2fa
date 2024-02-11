@@ -21,3 +21,9 @@ Added changelog to repo and updated README.md to link to it
 Fixed a bug where the -s flag for info/status was not working correctly
 
 Updated tests/fixtures with a regression test added for this plus general test improvements, most tests were rewritten
+
+## 1.0.6
+
+Added --version and -v flags to display the version of open2fa
+
+Also added set_version.py in repo root dir to update the version in open2fa/version.py and pyproject.toml

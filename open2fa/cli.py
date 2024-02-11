@@ -17,6 +17,7 @@ from . import msgs as MSGS
 from .cli_utils import parse_cli_arg_aliases
 from .main import Open2FA
 from .utils import sec_trunc
+from . import version
 
 logger = getLogger(__name__)
 logger.setLevel('INFO')
@@ -32,6 +33,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="open2fa CLI: simple 2FA CLI interface"
     )
+
+    parser.add_argument(
+        '--version',
+        '-v',
+        action='version',
+        version='Open2FA CLI %s' % version.__version__,
+    )
+
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     # Add command
@@ -335,6 +344,7 @@ def main(*args, **kwargs) -> Open2FA:
                 Op2FA.remove_secret(cli_args.name, cli_args.secret)
             )
         )
+
     return Op2FA
 
 
