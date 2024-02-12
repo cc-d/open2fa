@@ -38,10 +38,13 @@ def parse_args() -> argparse.Namespace:
         '--version',
         '-v',
         action='version',
-        version='Open2FA CLI %s' % version.__version__,
+        version=MSGS.VERSION.format(version.__version__),
+        help="Show program's version number and exit.",
     )
 
-    subparsers = parser.add_subparsers(dest='command', required=True)
+    subparsers = parser.add_subparsers(
+        dest='command', required=False, help='Open2FA command to execute'
+    )
 
     # Add command
     parser_add = subparsers.add_parser(
@@ -263,6 +266,12 @@ def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
 def main(*args, **kwargs) -> Open2FA:
     cli_args = parse_args()
 
+    if not hasattr(cli_args, 'command') or cli_args.command is None:
+        if '-v' in sys.argv or '--version' in sys.argv:
+            print(MSGS.VERSION.format(version.__version__))
+        else:
+            cli_args.print_help()
+
     _dir = config.OPEN2FA_DIR if 'dir' not in kwargs else kwargs['dir']
     _uuid = config.OPEN2FA_UUID if 'uuid' not in kwargs else kwargs['uuid']
     _api_url = (
@@ -272,6 +281,7 @@ def main(*args, **kwargs) -> Open2FA:
     )
 
     Op2FA = Open2FA(o2fa_dir=_dir, o2fa_uuid=_uuid, o2fa_api_url=_api_url)
+
     # info
     if cli_args.command == 'info':
         # check if info -s flag is set

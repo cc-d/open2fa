@@ -201,24 +201,28 @@ or by running the vscode pytest launch configuration with f5.
 Name                   Stmts   Miss  Cover   Missing
 ----------------------------------------------------
 open2fa/__init__.py        0      0   100%
-open2fa/cli.py           161     16    90%   185, 197, 199, 213-215, 225, 274-275, 280-286, 328-329, 339
+open2fa/cli.py           161     18    89%   198, 210, 212, 226-228, 238, 242, 273, 296-297, 302-308, 350-351, 362
 open2fa/cli_utils.py      60      0   100%
 open2fa/common.py         70      1    99%   123
 open2fa/config.py         12      0   100%
 open2fa/ex.py             15      2    87%   3, 19
-open2fa/main.py          116     15    87%   69-70, 103-107, 110-113, 174, 217-218, 220-221, 226-239
-open2fa/msgs.py           19      0   100%
+open2fa/main.py          116     14    88%   69-70, 103-107, 115, 174, 217-218, 220-221, 226-239
+open2fa/msgs.py           20      0   100%
 open2fa/totp.py           30      0   100%
-open2fa/utils.py          31     15    52%   20-25, 28, 52-63, 68
+open2fa/utils.py          31     14    55%   20-25, 28, 52-63
+open2fa/version.py         1      0   100%
 ----------------------------------------------------
-TOTAL                    514     49    90%
-```
+TOTAL                    516     49    91%
+
 
 The tests are not complete, and need to be expanded.
 
 ## Contributing
 
-Feel free to open an issue or pull request. If you are opening a pull request, please make sure to run the tests and ensure that the coverage does not decrease.
+Feel free to open an issue or pull request. If you are opening a pull request, please make sure to run the tests and ensure that the coverage does not decrease, and any new code is covered by tests.
+
+Remember to update the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) with any changes and to update the version in `open2fa/version.py` and `pyproject.toml` (can use the `set_version.py` script).
+
 
 ## License
 
@@ -227,3 +231,4 @@ MIT
 ## Contact
 
 ccarterdev@gmail.com
+```

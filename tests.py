@@ -10,6 +10,7 @@ from open2fa.main import apireq
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 from open2fa import ex as EX
 from open2fa import msgs as MSGS
+from open2fa.version import __version__
 
 # Assuming ranstr function exists for generating random strings
 from pyshared import ranstr
@@ -252,3 +253,15 @@ def test_info_dash_s(remote_init):
     assert str(remote_init.o2fa_uuid.uuid) in out
     assert MSGS.INFO_SEC_TIP not in out
     assert str(remote_init.o2fa_uuid.remote.b58) in out
+
+
+@pytest.mark.parametrize('version_arg', ['-v', '--version'])
+def test_version(version_arg):
+    """Test the version command."""
+    with patch('open2fa.cli.sys.argv', ['open2fa', version_arg]):
+        # prevent exit
+        with patch('sys.exit') as fake_exit:
+            with patch('sys.stdout', new=StringIO()) as fake_output:
+                main()
+
+    assert MSGS.VERSION.format(__version__) in fake_output.getvalue()

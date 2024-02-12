@@ -27,3 +27,9 @@ Updated tests/fixtures with a regression test added for this plus general test i
 Added --version and -v flags to display the version of open2fa
 
 Also added set_version.py in repo root dir to update the version in open2fa/version.py and pyproject.toml
+
+## 1.0.7
+
+Added test for --version and -v flags
+
+Changed the way --version is handled in cli.py
