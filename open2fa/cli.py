@@ -175,57 +175,6 @@ def parse_args() -> argparse.ArgumentParser:
 
 
 @logf()
-def code_gen(
-    op2fa: Open2FA,
-    repeat: TYPE.Optional[int] = None,
-    name: TYPE.Optional[str] = None,
-) -> None:
-    """Generate 2FA codes for the Open2FA object and live update
-    the CLI output.
-    ~op2fa (Open2FA): the Open2FA object
-    ~repeat (int, optional): how many times to repeat the code generation
-    ~name (str, optional): the name of the secret to generate a code for
-    -> None
-    """
-
-    longest = max([len(str(s.name)) for s in op2fa.secrets])
-
-    cols = ['Name'.ljust(longest), 'Code  ', 'Next Code']
-
-    sys.stdout.write('\n%s    %s    %s' % (cols[0], cols[1], cols[2]) + '\n')
-    sys.stdout.write('    '.join(['-' * len(str(c)) for c in cols]) + '\n')
-
-    prev_lines = 0
-    while True:
-        buffer = []
-        for c in op2fa.generate_codes():
-            buffer.append(
-                '%s    %s    %s'
-                % (
-                    str(c.name).ljust(longest),
-                    c.code.code,
-                    '%.2f' % round(c.code.next_interval_in, 2),
-                )
-            )
-
-        # Clear the previous output
-        sys.stdout.write('\033[F' * prev_lines)
-
-        # Store the number of lines in the current buffer
-        prev_lines = len(buffer) + 1
-
-        # Write the current buffer
-        sys.stdout.write('\n'.join(buffer) + '\n\n')
-        sys.stdout.flush()
-
-        if repeat is not None:
-            repeat -= 1
-            if repeat <= 0:
-                break
-        sleep(0.5)
-
-
-@logf()
 def main(
     o2fa_dir: str = config.OPEN2FA_DIR,
     o2fa_uuid: TYPE.Optional[str] = config.OPEN2FA_UUID,

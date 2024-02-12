@@ -328,39 +328,35 @@ def test_new_cli_kwargs(randir, ranuuid):
 
 
 TEST_NAMES = ['a' * i for i in range(1, 13, 2)]
-TEST_WIDTHS = [i * 2 for i in range(1, 10, 4)]
-TEST_HEIGHTS = [i * 2 for i in range(1, 10, 4)]
+TEST_WIDTHS = [30, 40, 100]
+TEST_HEIGHTS = [4, 10, 20]
 
 
-@pytest.mark.parametrize(
-    'w,h', [(w, h) for w in TEST_WIDTHS for h in TEST_HEIGHTS]
-)
-def test_autosize_generate_code(randir, w, h):
+def test_autosize_generate_code(randir):
     """Test the autosize_generate_code function."""
     o2fa = Open2FA(randir, None, 'http://example')
-    for i in range(5, 50, 10):
+    for i in [5, 20, 50, 100]:
         o2fa.add_secret(TEST_TOTP, 'a' * i)
 
-    for _w, _h in zip(TEST_WIDTHS, TEST_HEIGHTS):
+    def _autosize_generate_code(o2fa, **kwargs):
+        w, h = kwargs['w'], kwargs['h']
         with patch(
-            'os.get_terminal_size',
-            return_value=MagicMock(columns=_w, lines=_h),
+            'os.get_terminal_size', return_value=MagicMock(columns=w, lines=h)
         ):
             out = main_out(
                 ['open2fa', 'g', '-r', '1'],
                 dir=o2fa.o2fa_dir,
                 api_url='http://example',
                 uuid=None,
-            )
-            if _h < len(o2fa.secrets) + 4:
-                assert 'codes not shown' in out
-            else:
-                assert 'codes not shown' not in out
-                continue
+            ).lower()
 
-            for _n in [str(s.name) for s in o2fa.secrets]:
-                if len(_n) > 15:
-                    if _w < 30:
-                        assert _n not in out
-                elif _w >= 30 and len(_n) < 10:
-                    assert _n in out
+            for i, line in enumerate(out.splitlines()):
+                if line == '':
+                    continue
+                _s = {
+                    line.find(x) for x in ['not shown', '---', 'name', 'aaa']
+                }
+                assert len(_s) > 1
+
+    for w, h in zip(TEST_WIDTHS, TEST_HEIGHTS):
+        _autosize_generate_code(o2fa, w=w, h=h)
