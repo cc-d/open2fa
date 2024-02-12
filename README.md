@@ -166,14 +166,13 @@ Remote capabilities initialized with UUID: 0e4742ef-780b-406d-8651-7766cf67be3f
 It is recommended to save this UUID somewhere safe and use as an environment variable OPEN2FA_UUID.
 
 ========== Open2FA INFO/STATUS ==========
-(add -s to show uncensored secrets)
 
 Open2FA Directory: /Users/mym2/.open2fa
 Open2FA Remote API URL: http://localhost:8000/api/v1
 Number of secrets: 11
-Open2FA UUID: 0...
-Open2FA ID: X...
-Open2FA Secret: Q...
+Open2FA UUID: 0e4742ef-780b-406d-8651-7766cf67be3f
+Open2FA ID: XF1628BGJeibVv8C9UacG4
+Open2FA Secret:QGcst74V9JXnyBnQmWSoCx
 ```
 
 In this example:
