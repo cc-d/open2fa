@@ -5,7 +5,7 @@ import sys
 import os
 import os.path as osp
 from uuid import UUID, uuid4
-from open2fa.cli import Open2FA, handle_remote_init, main
+from open2fa.cli import Open2FA, main
 from open2fa.main import apireq
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 from open2fa import ex as EX
@@ -43,6 +43,12 @@ def randir():
     if osp.exists(os.path.join(_tmpdir, 'secrets.json')):
         os.remove(os.path.join(_tmpdir, 'secrets.json'))
     os.rmdir(_tmpdir)
+
+
+@pytest.fixture
+def ranuuid():
+    """Fixture to generate a random UUID for testing."""
+    yield str(uuid4())
 
 
 @pytest.fixture
@@ -272,9 +278,25 @@ def test_empty_command():
     """Test the empty command."""
     with patch('open2fa.cli.sys.argv', ['open2fa']):
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            cli_ret = main()
+            main()
 
     out = fake_output.getvalue().lower()
 
     for hstr in ['usage', 'options', 'positional', '-h', '-v']:
         assert hstr in out
+
+
+def test_new_cli_kwargs(randir, ranuuid):
+    """Test the new cli keyword arguments."""
+
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'info', '-s']):
+        with patch('sys.stdout', new=StringIO()) as fake_output:
+            o2fa = main(
+                o2fa_dir=randir,
+                o2fa_uuid=ranuuid,
+                o2fa_api_url='http://example',
+            )
+
+    assert o2fa.o2fa_dir == randir
+    assert o2fa.o2fa_uuid.uuid == UUID(ranuuid)
+    assert o2fa.o2fa_api_url == 'http://example'

@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 import os.path as osp
 import typing as TYPE
 from pathlib import Path
@@ -55,6 +56,12 @@ class Open2FA:
             if o2fa_api_url is not None
             else config.OPEN2FA_API_URL
         )
+
+    @logf()
+    def set_uuid(self, uuid: str) -> O2FAUUID:
+        """Set the Open2FA UUID attribute to O2FAUUID(uuid)"""
+        self.o2fa_uuid = O2FAUUID(uuid)
+        return self.o2fa_uuid
 
     @logf()
     def add_secret(self, secret: str, name: str) -> TOTPSecret:
@@ -237,6 +244,61 @@ class Open2FA:
             },
         )
         return int(resp.data['deleted'])
+
+    @logf()
+    def cli_info(self, show_secrets: bool) -> None:
+        """Prints the Open2FA info."""
+        o_dir = self.o2fa_dir
+        o_api_url = self.o2fa_api_url or config.OPEN2FA_API_URL
+
+        def itrunc(s):
+            return str(s)[0] + '...' if show_secrets is False else str(s)
+
+        o_num_secrets = len(self.secrets)
+        o_uuid_str, o_id, o_secret = None, None, None
+        if self.o2fa_uuid:
+            o_uuid_str = itrunc(self.o2fa_uuid.uuid)
+            o_id = itrunc(self.o2fa_uuid.o2fa_id)
+            o_secret = itrunc(self.o2fa_uuid.remote.b58)
+        msg = MSGS.INFO_STATUS
+        if show_secrets is True:
+            msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
+        print(
+            msg.format(
+                o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret
+            )
+        )
+
+    @logf()
+    def remote_init(self) -> TYPE.Optional[O2FAUUID]:
+        """Handles initialization of remote capabilities of Open2FA instance
+        Returns:
+            O2FAUUID: the Open2FA UUID if newly created else None
+        """
+        uuid_file_path = os.path.join(self.o2fa_dir, 'open2fa.uuid')
+
+        if self.o2fa_uuid is not None:
+            print(MSGS.INIT_UUID_SET)
+            return
+
+        if os.path.exists(uuid_file_path):
+            with open(uuid_file_path, 'r') as uuid_file:
+                self.o2fa_uuid = O2FAUUID(uuid_file.read().strip())
+            print(MSGS.INIT_FOUND_UUID.format(self.o2fa_uuid))
+        else:
+            user_response = input(MSGS.INIT_CONFIRM)
+            if user_response.lower() == 'y':
+                # Generate new UUID, set it, and write to file
+                self.set_uuid(str(uuid.uuid4()))
+
+                with open(uuid_file_path, 'w') as uuid_file:
+                    uuid_file.write(str(self.o2fa_uuid.uuid))
+
+                os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
+                print(MSGS.INIT_SUCCESS.format(str(self.o2fa_uuid.uuid)))
+                return self.o2fa_uuid
+            else:
+                print(MSGS.INIT_FAIL)
 
     def __repr__(self) -> str:
         return default_repr(

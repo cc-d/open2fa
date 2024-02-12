@@ -41,3 +41,15 @@ Handeled empty cli args in cli.py by printing help message
 Added tests to verify this
 
 Updated parse_args to return the parser instead of the args, and updated cli.py main() to reflect this
+
+Added imports to **init**.py
+
+## 1.0.9
+
+Moved cli.py functions into open2fa class methods, specifically the remote init and info/status functions
+
+Added named kwargs to the cli.py main() function
+
+Ensured previous backwards compatibility with cli.py kwargs
+
+Added tests for this

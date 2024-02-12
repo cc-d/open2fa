@@ -199,78 +199,25 @@ def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
 
 
 @logf()
-def handle_remote_init(op2fa: Open2FA) -> Open2FA:
-    """Handles initialization of remote capabilities."""
-    # Check if OPEN2FA_UUID is set or exists
-    open2fa_dir = op2fa.o2fa_dir or config.OPEN2FA_DIR
-    uuid_file_path = os.path.join(open2fa_dir, 'open2fa.uuid')
-    api_url = op2fa.o2fa_api_url or config.OPEN2FA_API_URL
-
-    if op2fa.o2fa_uuid is not None:
-        print(MSGS.INIT_UUID_SET)
-    elif os.path.exists(uuid_file_path):
-        print(MSGS.INIT_FOUND_UUID)
-    else:
-        user_response = input(MSGS.INIT_CONFIRM)
-        if user_response.lower() == 'y':
-            # Generate new UUID and write to file
-            new_uuid = str(uuid.uuid4())
-            with open(uuid_file_path, 'w') as uuid_file:
-                uuid_file.write(new_uuid)
-            os.chmod(uuid_file_path, config.OPEN2FA_KEY_PERMS)
-            print(MSGS.INIT_SUCCESS.format(new_uuid))
-            op2fa = Open2FA(open2fa_dir, new_uuid, api_url)
-            handle_info(op2fa, True)
-            return op2fa
-        else:
-            print(MSGS.INIT_FAIL)
-
-    return op2fa
-
-
-@logf()
-def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
-    """Prints the Open2FA info."""
-    o_dir = op2fa.o2fa_dir
-    if hasattr(op2fa, 'o2fa_api_url'):
-        o_api_url = op2fa.o2fa_api_url
-    else:
-        o_api_url = config.OPEN2FA_API_URL
-
-    def itrunc(s):
-        if s is None:
-            return s
-        return str(s)[0] + '...' if show_secrets is False else str(s)
-
-    o_num_secrets = len(op2fa.secrets)
-
-    o_uuid_str, o_id, o_secret = None, None, None
-
-    if hasattr(op2fa, 'o2fa_uuid') and op2fa.o2fa_uuid is not None:
-        o_uuid = op2fa.o2fa_uuid
-        if o_uuid:
-            o_uuid_str = itrunc(o_uuid.uuid)
-            o_id = itrunc(o_uuid.o2fa_id)
-            o_secret = itrunc(o_uuid.remote.b58)
-
-    msg = MSGS.INFO_STATUS
-    if show_secrets is True:
-        msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
-
-    print(
-        msg.format(o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret)
-    )
-
-
-@logf()
-def main(*args, **kwargs) -> TYPE.Optional[Open2FA]:
+def main(
+    o2fa_dir: str = config.OPEN2FA_DIR,
+    o2fa_uuid: TYPE.Optional[str] = config.OPEN2FA_UUID,
+    o2fa_api_url: str = config.OPEN2FA_API_URL,
+    **kwargs,
+) -> TYPE.Optional[Open2FA]:
     """Main function for the open2fa CLI. Returns an Open2FA object
     in all cases except when the version flag is set or no command is
     provided.
-    KwArgs:
-        dir (Optional[str]): The open2fa directory.
-        uuid (Optional[str]): The open2fa UUID.
-        api_url (Optional[str]): The open2fa API URL.
+    Args:
+        o2fa_dir (Optional[str]): The open2fa directory.
+            Defaults to config.OPEN2FA_DIR.
+        o2fa_uuid (Optional[str]): The open2fa UUID.
+            Defaults to config.OPEN2FA_UUID.
+        o2fa_api_url (Optional[str]): The open2fa API URL.
+            Defaults to config.OPEN2FA_API_URL.
+        **kwargs: dir, uuid, api_url can be passed as keyword arguments
+            which will override their respective passed args/defaults.
+            This was done to maintain backwards compatibility.
     Returns:
         Optional[Open2FA]: The Open2FA object.
     """
@@ -284,26 +231,28 @@ def main(*args, **kwargs) -> TYPE.Optional[Open2FA]:
             cli_parser.print_help()
         return
 
-    _dir = config.OPEN2FA_DIR if 'dir' not in kwargs else kwargs['dir']
-    _uuid = config.OPEN2FA_UUID if 'uuid' not in kwargs else kwargs['uuid']
-    _api_url = (
-        config.OPEN2FA_API_URL
-        if 'api_url' not in kwargs
-        else kwargs['api_url']
-    )
+    # maintain backwards compatibility
+    if 'dir' in kwargs:
+        o2fa_dir = kwargs['dir']
+    if 'uuid' in kwargs:
+        o2fa_uuid = kwargs['uuid']
+    if 'api_url' in kwargs:
+        o2fa_api_url = kwargs['api_url']
 
-    Op2FA = Open2FA(o2fa_dir=_dir, o2fa_uuid=_uuid, o2fa_api_url=_api_url)
+    Op2FA = Open2FA(
+        o2fa_dir=o2fa_dir, o2fa_uuid=o2fa_uuid, o2fa_api_url=o2fa_api_url
+    )
 
     # info
     if cli_args.command == 'info':
         # check if info -s flag is set
         # use the show_secrets flag to determine if secrets should be shown
         # do NOT use cli_args.secret
-        handle_info(Op2FA, cli_args.show_secrets)
+        Op2FA.cli_info(show_secrets=cli_args.show_secrets)
     # remote
     elif cli_args.command == 'remote':
         if cli_args.remote_command.startswith('ini'):
-            Op2FA = handle_remote_init(Op2FA)
+            Op2FA.remote_init()
         if cli_args.remote_command.startswith('pus'):
             pushed = Op2FA.remote_push()
             print(MSGS.PUSH_SUCCESS.format(len(pushed)))
