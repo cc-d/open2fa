@@ -24,10 +24,10 @@ logger.setLevel('INFO')
 
 
 @logf()
-def parse_args() -> argparse.Namespace:
+def parse_args() -> argparse.ArgumentParser:
     """Parse command-line arguments.
     Returns:
-        argparse.Namespace: The parsed arguments.
+        argparse.ArgumentParser: The command-line argument parser.
     """
     sys.argv = parse_cli_arg_aliases(sys.argv)
     parser = argparse.ArgumentParser(
@@ -155,7 +155,7 @@ def parse_args() -> argparse.Namespace:
         dest='name',
     )
 
-    return parser.parse_args()
+    return parser
 
 
 @logf()
@@ -263,14 +263,26 @@ def handle_info(op2fa: Open2FA, show_secrets: bool) -> None:
 
 
 @logf()
-def main(*args, **kwargs) -> Open2FA:
-    cli_args = parse_args()
+def main(*args, **kwargs) -> TYPE.Optional[Open2FA]:
+    """Main function for the open2fa CLI. Returns an Open2FA object
+    in all cases except when the version flag is set or no command is
+    provided.
+    KwArgs:
+        dir (Optional[str]): The open2fa directory.
+        uuid (Optional[str]): The open2fa UUID.
+        api_url (Optional[str]): The open2fa API URL.
+    Returns:
+        Optional[Open2FA]: The Open2FA object.
+    """
+    cli_parser = parse_args()
+    cli_args = cli_parser.parse_args()
 
-    if not hasattr(cli_args, 'command') or cli_args.command is None:
+    if cli_args.command is None:
         if '-v' in sys.argv or '--version' in sys.argv:
             print(MSGS.VERSION.format(version.__version__))
         else:
-            cli_args.print_help()
+            cli_parser.print_help()
+        return
 
     _dir = config.OPEN2FA_DIR if 'dir' not in kwargs else kwargs['dir']
     _uuid = config.OPEN2FA_UUID if 'uuid' not in kwargs else kwargs['uuid']

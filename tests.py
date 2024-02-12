@@ -262,6 +262,19 @@ def test_version(version_arg):
         # prevent exit
         with patch('sys.exit') as fake_exit:
             with patch('sys.stdout', new=StringIO()) as fake_output:
-                main()
+                cli_ret = main()
 
     assert MSGS.VERSION.format(__version__) in fake_output.getvalue()
+    assert cli_ret is None
+
+
+def test_empty_command():
+    """Test the empty command."""
+    with patch('open2fa.cli.sys.argv', ['open2fa']):
+        with patch('sys.stdout', new=StringIO()) as fake_output:
+            cli_ret = main()
+
+    out = fake_output.getvalue().lower()
+
+    for hstr in ['usage', 'options', 'positional', '-h', '-v']:
+        assert hstr in out

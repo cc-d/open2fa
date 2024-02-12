@@ -101,6 +101,10 @@ def dash_arg(arg: str) -> TYPE.Set[str]:
 
 def parse_cli_arg_aliases(argv_args: TYPE.List[str]) -> TYPE.List[str]:
     """turns cli arg aliases into their canonical form"""
+    non_empty_args = [arg.lower() for arg in argv_args if arg != '']
+    if len(non_empty_args) < 2:
+        return argv_args
+
     alias_map = {
         'list': {'l', '-l'}.union(dash_arg('list')),
         'add': {'a', '-a'}.union(dash_arg('add')),
