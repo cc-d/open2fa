@@ -3,9 +3,13 @@ import os
 import uuid
 import os.path as osp
 import typing as TYPE
+import time
+import sys
 from pathlib import Path
+from signal import signal, SIGWINCH
 
 import requests as req
+from shutil import get_terminal_size
 from logfunc import logf
 from pyshared import truncstr, default_repr
 
@@ -137,8 +141,107 @@ class Open2FA:
         """
         for s in self.secrets:
             s.generate_code()
-            if name is None or s.name == name:
+            if name is None or str(s.name).find(name) != -1:
                 yield s
+
+    def display_codes(
+        self,
+        repeat: TYPE.Optional[int] = None,
+        name: TYPE.Optional[str] = None,
+        delay: float = 0.5,
+    ):
+        """
+        Live generate and display 2FA codes for the Open2FA object.
+        ~repeat (Optional[int]): Number of 2FA code generation iterations.
+            Default: None (infinite).
+        ~name (Optional[str]): Only generate for secrets matching this name.
+            Default: None (all secrets).
+        ~delay (float): Time between code generation iterations.
+            Default: 0.5 seconds.
+        """
+
+    def display_codes(
+        self,
+        repeat: TYPE.Optional[int] = None,
+        name: TYPE.Optional[str] = None,
+        delay: float = 0.5,
+    ):
+        """
+        Live generate and display 2FA codes for the Open2FA object.
+        ~repeat (Optional[int]): Number of 2FA code generation iterations.
+        ~name (Optional[str]): Only generate for secrets matching this name.
+        ~delay (float): Time between code generation iterations.
+        """
+        prev_lines = 0
+        try:
+            _sep = '    '
+            name_pool = [str(s.name) for s in self.secrets]
+            if name is not None:
+                name_pool = [n for n in name_pool if n.find(name) != -1]
+            MAXH = 0
+            while repeat is None or repeat > 0:
+                tsize = get_terminal_size()
+                TW, TH = tsize.columns, tsize.lines
+                TW, TH = max(TW, 30), max(TH, 4)
+                MAXH = max(MAXH, TH)
+
+                name_w = max(10, max(len(n) for n in name_pool))
+                MAX_NAME_W = TW - (len(_sep) * 2) - 6 - 5
+                widths = [min(name_w, MAX_NAME_W), 6, 5]
+                buffer = []
+
+                # Move up the cursor to the top of the previous output
+                if prev_lines > 0:
+                    sys.stdout.write('\033[F' * prev_lines)
+                    sys.stdout.flush()
+                    if MAXH > TH:
+                        for _ in range(MAXH - TH):
+                            print(''.ljust(TW) + '\n')
+
+                # Header
+                header = _sep.join([
+                    'Name'.ljust(widths[0]),
+                    'Code'.ljust(widths[1]),
+                    'Next'.ljust(widths[2]),
+                ])
+                buffer.append(header)
+                buffer.append(_sep.join(['-' * w for w in widths]))
+
+                # Generate and display codes
+                for s in self.generate_codes(name):
+                    secret_name = (
+                        truncstr(str(s.name), start_chars=MAX_NAME_W - 3)
+                        if len(str(s.name)) > MAX_NAME_W
+                        else str(s.name)
+                    )
+                    row = [
+                        secret_name.ljust(widths[0]),
+                        s.code.code.ljust(widths[1]),
+                        '%.2f' % s.code.next_interval_in,
+                    ]
+                    buffer.append(_sep.join(row))
+                    if (len(buffer)) >= TH - 2:
+                        break
+
+                # Footer
+                if len(name_pool) > len(buffer) - 2:
+                    buffer.append(
+                        MSGS.GEN_CODES_NOT_SHOWN.format(
+                            len(name_pool) - len(buffer) + 2
+                        )
+                    )
+
+                # Print buffer and remember the number of lines printed
+                print('\n'.join(buffer))
+                sys.stdout.flush()
+                prev_lines = len(buffer)
+
+                time.sleep(delay)
+                if repeat is not None:
+                    repeat -= 1
+
+        except KeyboardInterrupt:
+            print("\nCancelled by user.")
 
     @logf()
     def write_secrets(self) -> None:

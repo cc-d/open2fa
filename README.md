@@ -101,16 +101,27 @@ Secret3    I65VU7K5ZQL7WB4E
 Generate codes for keys saved in `OPEN2FA_DIR/secrets.json`:
 
 ```bash
-open2fa generate
+open2fa % py3 -m open2fa.cli g -n TEST
 
-Name       Code      Next Code
--------    ------    ---------
-Secret1    490992    2.620
-Secret2    490992    2.620
-Secret3    216241    2.620
+Name                               Code      Next
+-------------------------------    ------    -----
+aTESTTESTTESTTESTTESTTEST3         919513    27.29
+aTESTTESTTESTTESTTESTTEST33        919513    27.29
+aTESTTESTTESTTESTTESTTEST334       919513    27.29
+aTESTTESTTESTTESTTESTTEST3344      919513    27.29
+aTESTTESTTESTTESTTESTTEST334434    919513    27.29
+TESTTESTTESTTESTTESTTEST           919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
+TESTTESTTESTTESTTESTTEST2          919513    27.29
 ```
 
 Tokens will continue to be generated until the user exits the program with `Ctrl+C`.
+
+As of version 1.1.0, the `open2fa generate` command will automatically adjust the height/width of the generated codes to fit the terminal window.
 
 **Show Open2FA Info/Status/Secrets**:
 
@@ -200,20 +211,20 @@ or by running the vscode pytest launch configuration with f5.
 ---------- coverage: platform darwin, python 3.11.7-final-0 ----------
 Name                   Stmts   Miss  Cover   Missing
 ----------------------------------------------------
-open2fa/__init__.py        0      0   100%
-open2fa/cli.py           161     18    89%   198, 210, 212, 226-228, 238, 242, 273, 296-297, 302-308, 350-351, 362
-open2fa/cli_utils.py      60      0   100%
+open2fa/__init__.py        3      0   100%
+open2fa/cli.py           122     25    80%   191-225, 281-282, 288-289, 337-338, 349
+open2fa/cli_utils.py      63      0   100%
 open2fa/common.py         70      1    99%   123
 open2fa/config.py         12      0   100%
 open2fa/ex.py             15      2    87%   3, 19
-open2fa/main.py          116     14    88%   69-70, 103-107, 115, 174, 217-218, 220-221, 226-239
-open2fa/msgs.py           20      0   100%
+open2fa/main.py          203     22    89%   81, 114-118, 126, 180, 195-199, 243-244, 284, 327-328, 384-385, 388-390, 404
+open2fa/msgs.py           21      0   100%
 open2fa/totp.py           30      0   100%
 open2fa/utils.py          31     14    55%   20-25, 28, 52-63
 open2fa/version.py         1      0   100%
 ----------------------------------------------------
-TOTAL                    516     49    91%
-
+TOTAL                    571     64    89%
+```
 
 The tests are not complete, and need to be expanded.
 
@@ -223,7 +234,6 @@ Feel free to open an issue or pull request. If you are opening a pull request, p
 
 Remember to update the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) with any changes and to update the version in `open2fa/version.py` and `pyproject.toml` (can use the `set_version.py` script).
 
-
 ## License
 
 MIT
@@ -231,4 +241,3 @@ MIT
 ## Contact
 
 ccarterdev@gmail.com
-```

@@ -11,7 +11,7 @@
         "-vv",
         "--cov=open2fa",
         "--cov-report=term-missing",
-        "--log-cli-level=DEBUG"
+        "--log-cli-level=INFO"
       ],
       "cwd": "${workspaceFolder}",
       "env": {

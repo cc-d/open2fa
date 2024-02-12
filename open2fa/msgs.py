@@ -47,3 +47,5 @@ DEL_MIA_NAME_AND_SEC = 'No name or secret provided to delete.'
 DEL_SUCCESS = 'Deleted {} secret(s).'
 
 VERSION = 'Open2FA version: {}'
+
+GEN_CODES_NOT_SHOWN = '... [{}] codes not shown ...'

@@ -96,6 +96,22 @@ def parse_args() -> argparse.ArgumentParser:
         help='How code generation cycles to repeat',
     )
 
+    parser_generate.add_argument(
+        '--name',
+        '-n',
+        type=str,
+        help='Generate codes only for secrets matching name',
+        default=None,
+    )
+
+    parser_generate.add_argument(
+        '--delay',
+        '-d',
+        type=float,
+        help='Delay between code generation cycles',
+        default=0.5,
+    )
+
     # List command
     parser_list = subparsers.add_parser(
         'list', help='List TOTP keys', aliases=['l']
@@ -159,8 +175,19 @@ def parse_args() -> argparse.ArgumentParser:
 
 
 @logf()
-def code_gen(op2fa: Open2FA, repeat: TYPE.Optional[int] = None) -> None:
-    """Infinite code generation loop."""
+def code_gen(
+    op2fa: Open2FA,
+    repeat: TYPE.Optional[int] = None,
+    name: TYPE.Optional[str] = None,
+) -> None:
+    """Generate 2FA codes for the Open2FA object and live update
+    the CLI output.
+    ~op2fa (Open2FA): the Open2FA object
+    ~repeat (int, optional): how many times to repeat the code generation
+    ~name (str, optional): the name of the secret to generate a code for
+    -> None
+    """
+
     longest = max([len(str(s.name)) for s in op2fa.secrets])
 
     cols = ['Name'.ljust(longest), 'Code  ', 'Next Code']
@@ -232,12 +259,9 @@ def main(
         return
 
     # maintain backwards compatibility
-    if 'dir' in kwargs:
-        o2fa_dir = kwargs['dir']
-    if 'uuid' in kwargs:
-        o2fa_uuid = kwargs['uuid']
-    if 'api_url' in kwargs:
-        o2fa_api_url = kwargs['api_url']
+    o2fa_dir = kwargs.get('dir', o2fa_dir)
+    o2fa_uuid = kwargs.get('uuid', o2fa_uuid)
+    o2fa_api_url = kwargs.get('api_url', o2fa_api_url)
 
     Op2FA = Open2FA(
         o2fa_dir=o2fa_dir, o2fa_uuid=o2fa_uuid, o2fa_api_url=o2fa_api_url
@@ -278,7 +302,9 @@ def main(
         )
     # gen
     elif cli_args.command == 'generate':
-        code_gen(Op2FA, cli_args.repeat)
+        Op2FA.display_codes(
+            repeat=cli_args.repeat, name=cli_args.name, delay=cli_args.delay
+        )
     # list
     elif cli_args.command == 'list':
         max_name, max_secret = 4, 6

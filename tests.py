@@ -261,6 +261,31 @@ def test_info_dash_s(remote_init):
     assert str(remote_init.o2fa_uuid.remote.b58) in out
 
 
+def test_remote_delete(remote_init):
+    """Test deleting the remote capabilities of Open2FA."""
+    o2fa = remote_init
+    o2fa.add_secret(TEST_TOTP, 'name1')
+
+    with patch('builtins.input', return_value='y') as fake_input:
+        with patch(
+            'open2fa.cli.sys.argv',
+            ['open2fa', 'remote', 'delete', '-n', 'name1'],
+        ):
+            with patch(
+                'open2fa.main.apireq',
+                return_value=MagicMock(data={'deleted': '1'}),
+            ) as fake_apireq, patch(
+                'sys.stdout', new=StringIO()
+            ) as fake_output:
+                o2fa = main(
+                    dir=o2fa.o2fa_dir,
+                    api_url=TEST_URL,
+                    uuid=str(o2fa.o2fa_uuid.uuid),
+                )
+
+    assert 'Deleted 1 secret' in fake_output.getvalue()
+
+
 @pytest.mark.parametrize('version_arg', ['-v', '--version'])
 def test_version(version_arg):
     """Test the version command."""
@@ -300,3 +325,42 @@ def test_new_cli_kwargs(randir, ranuuid):
     assert o2fa.o2fa_dir == randir
     assert o2fa.o2fa_uuid.uuid == UUID(ranuuid)
     assert o2fa.o2fa_api_url == 'http://example'
+
+
+TEST_NAMES = ['a' * i for i in range(1, 13, 2)]
+TEST_WIDTHS = [i * 2 for i in range(1, 10, 4)]
+TEST_HEIGHTS = [i * 2 for i in range(1, 10, 4)]
+
+
+@pytest.mark.parametrize(
+    'w,h', [(w, h) for w in TEST_WIDTHS for h in TEST_HEIGHTS]
+)
+def test_autosize_generate_code(randir, w, h):
+    """Test the autosize_generate_code function."""
+    o2fa = Open2FA(randir, None, 'http://example')
+    for i in range(5, 50, 10):
+        o2fa.add_secret(TEST_TOTP, 'a' * i)
+
+    for _w, _h in zip(TEST_WIDTHS, TEST_HEIGHTS):
+        with patch(
+            'os.get_terminal_size',
+            return_value=MagicMock(columns=_w, lines=_h),
+        ):
+            out = main_out(
+                ['open2fa', 'g', '-r', '1'],
+                dir=o2fa.o2fa_dir,
+                api_url='http://example',
+                uuid=None,
+            )
+            if _h < len(o2fa.secrets) + 4:
+                assert 'codes not shown' in out
+            else:
+                assert 'codes not shown' not in out
+                continue
+
+            for _n in [str(s.name) for s in o2fa.secrets]:
+                if len(_n) > 15:
+                    if _w < 30:
+                        assert _n not in out
+                elif _w >= 30 and len(_n) < 10:
+                    assert _n in out

@@ -53,3 +53,9 @@ Added named kwargs to the cli.py main() function
 Ensured previous backwards compatibility with cli.py kwargs
 
 Added tests for this
+
+## 1.1.0
+
+Open2fa generate now automatically adjusts height/width of the generated codes to fit the terminal window
+
+Added tests for this
