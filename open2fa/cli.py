@@ -297,6 +297,10 @@ def main(
         return Op2FA
 
 
+def entry_point():
+    """avoid printing the open2fa object when called from the command line"""
+    main()
+
+
 if __name__ == "__main__":
-    # avoid printing the open2fa object when called from the command line
     _ = main()

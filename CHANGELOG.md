@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.1.4
+
+The entry_point func is now used by pyproject.toml to avoid the printing of the open2fa object to console when called from pypi installed open2fa
+
 ## 1.1.3
 
 The open2fa object is now only returned by main if the return_open2fa kwarg is present and true.
