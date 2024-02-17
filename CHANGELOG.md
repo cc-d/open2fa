@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.1.3
+
+The open2fa object is now only returned by main if the return_open2fa kwarg is present and true.
+
 ## 1.1.2
 
 Fixed bug where the open2fa object was being printed to console due to it being returned by main when called from the cli in some conditions

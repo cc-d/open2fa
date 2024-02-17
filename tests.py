@@ -28,7 +28,12 @@ def remote_init():
 
     with patch('builtins.input', return_value='y') as fake_input:
         with patch('open2fa.cli.sys.argv', ['open2fa', 'remote', 'init']):
-            o2fa = main(dir=_rand, api_url='http://test', uuid=None)
+            o2fa = main(
+                dir=_rand,
+                api_url='http://test',
+                uuid=None,
+                return_open2fa=True,
+            )
 
     yield o2fa
 
@@ -57,7 +62,9 @@ def o2fa_with_secret(randir):
     with patch(
         'open2fa.cli.sys.argv', ['open2fa', 'add', TEST_TOTP, '-n', TEST_NAME]
     ):
-        o2fa = main(dir=randir, api_url='http://test', uuid=None)
+        o2fa = main(
+            dir=randir, api_url='http://test', uuid=None, return_open2fa=True
+        )
 
     yield o2fa
 
@@ -102,7 +109,12 @@ def test_delete_secret(o2fa_with_secret):
         with patch(
             'open2fa.cli.sys.argv', ['open2fa', 'delete', '-n', TEST_NAME]
         ):
-            o2fa = main(dir=o2fa.o2fa_dir, api_url=TEST_URL, uuid=None)
+            o2fa = main(
+                dir=o2fa.o2fa_dir,
+                api_url=TEST_URL,
+                uuid=None,
+                return_open2fa=True,
+            )
     assert o2fa.o2fa_uuid is None
     assert len(o2fa.secrets) == 0
     with open(o2fa.secrets_json_path, 'r') as f:
@@ -281,6 +293,7 @@ def test_remote_delete(remote_init):
                     dir=o2fa.o2fa_dir,
                     api_url=TEST_URL,
                     uuid=str(o2fa.o2fa_uuid.uuid),
+                    return_open2fa=True,
                 )
 
     assert 'Deleted 1 secret' in fake_output.getvalue()
@@ -293,7 +306,7 @@ def test_version(version_arg):
         # prevent exit
         with patch('sys.exit') as fake_exit:
             with patch('sys.stdout', new=StringIO()) as fake_output:
-                cli_ret = main()
+                cli_ret = main(return_open2fa=True)
 
     assert MSGS.VERSION.format(__version__) in fake_output.getvalue()
     assert cli_ret is None
@@ -303,7 +316,7 @@ def test_empty_command():
     """Test the empty command."""
     with patch('open2fa.cli.sys.argv', ['open2fa']):
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            main()
+            main(return_open2fa=True)
 
     out = fake_output.getvalue().lower()
 
@@ -320,6 +333,7 @@ def test_new_cli_kwargs(randir, ranuuid):
                 o2fa_dir=randir,
                 o2fa_uuid=ranuuid,
                 o2fa_api_url='http://example',
+                return_open2fa=True,
             )
 
     assert o2fa.o2fa_dir == randir

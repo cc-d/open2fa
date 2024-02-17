@@ -293,7 +293,8 @@ def main(
             )
         )
 
-    return Op2FA
+    if kwargs.get('return_open2fa', False):
+        return Op2FA
 
 
 if __name__ == "__main__":
