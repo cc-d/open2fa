@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.1.2
+
+Fixed bug where the open2fa object was being printed to console due to it being returned by main when called from the cli in some conditions
+
 ## 1.1.1
 
 Reversed changelong order to be in descending order

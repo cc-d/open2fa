@@ -259,10 +259,12 @@ def main(
         max_name, max_secret = 4, 6
         if len(Op2FA.secrets) > 0:
             max_name = max([len(str(s.name)) for s in Op2FA.secrets])
-            max_secret = max([
-                len(str(s.secret)) if '-s' in sys.argv else 5
-                for s in Op2FA.secrets
-            ])
+            max_secret = max(
+                [
+                    len(str(s.secret)) if '-s' in sys.argv else 5
+                    for s in Op2FA.secrets
+                ]
+            )
 
         print(
             '\n' + 'Name'.ljust(max_name) + '    ' + 'Secret'.ljust(max_secret)
@@ -295,4 +297,5 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    # avoid printing the open2fa object when called from the command line
+    _ = main()

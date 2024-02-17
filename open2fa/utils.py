@@ -22,7 +22,6 @@ class ApiResponse:
             self.data = response.json()
         self.text = response.text
         self.status_code = response.status_code
-        print(self)
 
     def __repr__(self):
         return default_repr(
