@@ -10,7 +10,7 @@ All code can be found at:
 
 [API/WebUI repo](https://github.com/cc-d/open2fa-server)
 
-For information as to how the remote capabilities work, see [open2fa.liberfi.ai](https://open2fa.liberfy.ai)
+For information as to how the remote capabilities work, see [open2fa.liberfy.ai](https://open2fa.liberfy.ai)
 
 See the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) to follow ongoing development.
 
