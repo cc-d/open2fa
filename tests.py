@@ -101,6 +101,52 @@ def test_add_secret(o2fa_with_secret):
     )
 
 
+def test_add_secret_no_args(randir):
+    """Test adding a secret to the Open2FA instance."""
+    with patch('builtins.input', side_effect=[TEST_TOTP, TEST_NAME]):
+        with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
+            o2fa = main(
+                dir=randir, api_url=TEST_URL, uuid=None, return_open2fa=True
+            )
+
+    assert o2fa.o2fa_uuid is None
+    assert o2fa.o2fa_api_url == TEST_URL
+    assert len(o2fa.secrets) == 1
+    with open(o2fa.secrets_json_path, 'r') as f:
+        secjson = f.read()
+
+    assert TEST_NAME in secjson
+    assert TEST_TOTP in secjson
+
+
+def test_add_secret_no_args_none_name(randir):
+    """Test adding a secret to the Open2FA instance."""
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
+        with patch('sys.stdout', new=StringIO()) as fake_output:
+            with patch('builtins.input', side_effect=[TEST_TOTP, '']):
+                o2fa = main(
+                    dir=randir,
+                    api_url=TEST_URL,
+                    uuid=None,
+                    return_open2fa=True,
+                )
+    with open(o2fa.secrets_json_path, 'r') as f:
+        secjson = f.read()
+
+    assert o2fa.secrets[0].name is None
+
+
+def test_add_secret_no_args_no_input(randir):
+    """Test adding a secret to the Open2FA instance."""
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
+        with patch('sys.stdout', new=StringIO()) as fake_output:
+            with patch('builtins.input', side_effect=['a', 'b', 'c', 'd']):
+                with pytest.raises(SystemExit):
+                    main(dir=randir, api_url=TEST_URL, uuid=None)
+
+    assert 'exiting' in fake_output.getvalue().lower()
+
+
 def test_delete_secret(o2fa_with_secret):
     """Test removing a secret from the Open2FA instance."""
     o2fa = o2fa_with_secret

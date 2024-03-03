@@ -1,5 +1,9 @@
 # Change Log
 
+# 1.1.5
+
+Added support for argless use of open2fa add command, updated tests and documentation to reflect this
+
 ## 1.1.4
 
 The entry_point func is now used by pyproject.toml to avoid the printing of the open2fa object to console when called from pypi installed open2fa

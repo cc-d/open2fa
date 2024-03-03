@@ -56,10 +56,31 @@ pip install 'open2fa[dev]'
 
 You can see the full list of commands and options by running `open2fa -h` or `open2fa --help`.
 
-**Add a TOTP Secret**:
+### Add a TOTP Secret\*\*:
+
+There aere two different ways to add a TOTP secret. The first is to add a secret from args passed to the add command. The second is to simply run `open2fa add` and then enter the appropriate information when prompted.
+
+#### With args:
 
 ```bash
-open2fa add I65VU7K5ZQL7WB4E -n TESTKEY123
+open2fa add I65VU7K5ZQL7WB4E -n abc123
+
+ADDED NEW SECRET: abc123 I...E
+
+24 secrets total.
+```
+
+#### Without args:
+
+```bash
+open2fa add
+
+Enter TOTP secret: I65VU7K5ZQL7WB4E
+Enter name for secret: test15
+
+ADDED NEW SECRET: test15 I...E
+
+23 secrets total.
 ```
 
 **Delete a TOTP Secret**:

@@ -1,4 +1,4 @@
-SECRET_ADDED = 'Added secret: {}'
+SECRET_ADDED = '\nADDED NEW SECRET: {} {}\n'
 SECRET_DELETED = 'Deleted key for {}'
 SECRET_NOT_ADDED = 'Key not added.'
 CONFIRM_REMOVE = 'Are you sure you want to remove {} {}? (y/n): '
@@ -49,3 +49,10 @@ DEL_SUCCESS = 'Deleted {} secret(s).'
 VERSION = 'Open2FA version: {}'
 
 GEN_CODES_NOT_SHOWN = '... [{}] codes not shown ...'
+
+
+ADD_NO_NAME_SEC = 'open2fa add was called without name or secret.'
+ADD_SEC_PROMPT = 'Enter TOTP secret: '
+ADD_NAME_PROMPT = 'Enter name for secret: '
+ADD_INVALID_SECRET = 'Invalid TOTP secret: {} enter a valid secret.'
+ADD_SEC_NAME = '\nAdded TOTP secret: {} with name {}\n'
