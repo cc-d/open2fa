@@ -1,6 +1,10 @@
 # Change Log
 
-# 1.1.5
+## 1.1.6
+
+fixed readme errors
+
+## 1.1.5
 
 Added support for argless use of open2fa add command, updated tests and documentation to reflect this
 

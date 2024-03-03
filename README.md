@@ -56,7 +56,7 @@ pip install 'open2fa[dev]'
 
 You can see the full list of commands and options by running `open2fa -h` or `open2fa --help`.
 
-### Add a TOTP Secret\*\*:
+### Add a TOTP Secret
 
 There aere two different ways to add a TOTP secret. The first is to add a secret from args passed to the add command. The second is to simply run `open2fa add` and then enter the appropriate information when prompted.
 
@@ -83,13 +83,13 @@ ADDED NEW SECRET: test15 I...E
 23 secrets total.
 ```
 
-**Delete a TOTP Secret**:
+### Delete a TOTP Secret
 
 ```bash
 open2fa delete -n TESTKEY123
 ```
 
-**List All TOTP Secrets**:
+### List All TOTP Secrets
 
 ```bash
 open2fa list
@@ -117,7 +117,7 @@ Secret2    I65VU7K5ZQL7WB4E
 Secret3    I65VU7K5ZQL7WB4E
 ```
 
-**Generate 2FA Codes**:
+### Generate 2FA Codes
 
 Generate codes for keys saved in `OPEN2FA_DIR/secrets.json`:
 
@@ -144,7 +144,7 @@ Tokens will continue to be generated until the user exits the program with `Ctrl
 
 As of version 1.1.0, the `open2fa generate` command will automatically adjust the height/width of the generated codes to fit the terminal window.
 
-**Show Open2FA Info/Status/Secrets**:
+### Show Open2FA Info/Status/Secrets
 
 ```bash
 open2fa info
@@ -170,7 +170,7 @@ When initializing the remote capabilities of the open2fa CLI, a UUID will be gen
 
 For usage with the webui, both the Open2FA ID and the Open2FA Secret are required. These can be determined from `open2fa info` after initializing the remote capabilities of the open2fa CLI.
 
-### **Initialize the Remote Capabilities of the Open2FA Client**:
+### Initialize the Remote Capabilities of the Open2FA Client
 
 ```bash
 open2fa init
@@ -202,21 +202,21 @@ In this example:
 - The Open2FA ID is `XF1628BGJeibVv8C9UacG4`
 - The Open2FA Secret is `QGcst74V9JXnyBnQmWSoCx`
 
-### Remote Commands
+## Remote Commands
 
-**Push TOTP Secrets to the remote server**:
+Push TOTP Secrets to the remote server\*\*:
 
 ```bash
 open2fa push
 ```
 
-**Pull TOTP Secrets from the remote server**:
+### Pull TOTP Secrets from the remote server:
 
 ```bash
 open2fa pull
 ```
 
-**Delete a TOTP Secret from the remote server**:
+### Delete a TOTP Secret from the remote server
 
 ```bash
 open2fa delete -n TESTKEY123
