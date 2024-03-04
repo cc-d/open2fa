@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.1.7
+
+changed package requirements range for logfunc requirement
+
 ## 1.1.6
 
 fixed readme errors
