@@ -173,7 +173,7 @@ For usage with the webui, both the Open2FA ID and the Open2FA Secret are require
 ### Initialize the Remote Capabilities of the Open2FA Client
 
 ```bash
-open2fa init
+open2fa remote init
 ```
 
 Example Output:
@@ -193,7 +193,7 @@ Open2FA Remote API URL: http://localhost:8000/api/v1
 Number of secrets: 11
 Open2FA UUID: 0e4742ef-780b-406d-8651-7766cf67be3f
 Open2FA ID: XF1628BGJeibVv8C9UacG4
-Open2FA Secret:QGcst74V9JXnyBnQmWSoCx
+Open2FA Secret: QGcst74V9JXnyBnQmWSoCx
 ```
 
 In this example:
@@ -207,19 +207,19 @@ In this example:
 Push TOTP Secrets to the remote server\*\*:
 
 ```bash
-open2fa push
+open2fa remote push
 ```
 
 ### Pull TOTP Secrets from the remote server:
 
 ```bash
-open2fa pull
+open2fa remote pull
 ```
 
 ### Delete a TOTP Secret from the remote server
 
 ```bash
-open2fa delete -n TESTKEY123
+open2fa remote delete -n TESTKEY123
 ```
 
 ## Testing

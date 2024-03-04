@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.1.8
+
+Fixed the remote examples in the README.md
+
 ## 1.1.7
 
 changed package requirements range for logfunc requirement
