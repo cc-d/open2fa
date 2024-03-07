@@ -222,6 +222,17 @@ open2fa remote pull
 open2fa remote delete -n TESTKEY123
 ```
 
+### List all TOTP Secrets stored remotely
+
+```bash
+open2fa remote list
+
+Name           Secret
+-----------    -----
+test_secret    I...E
+
+```
+
 ## Testing
 
 You can run the tests by running `pytest tests.py` in the root directory of the project

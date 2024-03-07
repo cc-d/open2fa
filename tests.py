@@ -5,7 +5,7 @@ import sys
 import os
 import os.path as osp
 from uuid import UUID, uuid4
-from open2fa.cli import Open2FA, main
+from open2fa.cli import Open2FA, main, _print_secrets
 from open2fa.main import apireq
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 from open2fa import ex as EX
@@ -420,3 +420,27 @@ def test_autosize_generate_code(randir):
 
     for w, h in zip(TEST_WIDTHS, TEST_HEIGHTS):
         _autosize_generate_code(o2fa, w=w, h=h)
+
+
+def test_remote_list(ranuuid, randir):
+    """Test the remote list command."""
+    o2fa = Open2FA(randir, ranuuid, 'http://example')
+    with patch('open2fa.main.apireq') as fake_apireq:
+        fake_apireq.return_value.data = {'totps': []}
+        out = main_out(
+            ['open2fa', 'remote', 'list'],
+            dir=o2fa.o2fa_dir,
+            api_url='http://example',
+            uuid=ranuuid,
+        )
+
+    with patch('open2fa.main.Open2FA.remote_pull') as fake_remote_list:
+        fake_remote_list.return_value = [TOTPSecret(TEST_TOTP, 'name1')]
+        out = main_out(
+            ['open2fa', 'remote', 'list'],
+            dir=o2fa.o2fa_dir,
+            api_url='http://example',
+            uuid=ranuuid,
+        )
+
+    assert 'name1' in out

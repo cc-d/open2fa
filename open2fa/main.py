@@ -199,11 +199,13 @@ class Open2FA:
                             print(''.ljust(TW) + '\n')
 
                 # Header
-                header = _sep.join([
-                    'Name'.ljust(widths[0]),
-                    'Code'.ljust(widths[1]),
-                    'Next'.ljust(widths[2]),
-                ])
+                header = _sep.join(
+                    [
+                        'Name'.ljust(widths[0]),
+                        'Code'.ljust(widths[1]),
+                        'Next'.ljust(widths[2]),
+                    ]
+                )
                 buffer.append(header)
                 buffer.append(_sep.join(['-' * w for w in widths]))
 
@@ -340,10 +342,14 @@ class Open2FA:
             headers={'X-User-Hash': uhash},
             api_url=self.o2fa_api_url,
             data={
-                'totps': [{
-                    'name': getattr(delsec, 'name', None),
-                    'enc_secret': self.o2fa_uuid.remote.encrypt(delsec.secret),
-                }]
+                'totps': [
+                    {
+                        'name': getattr(delsec, 'name', None),
+                        'enc_secret': self.o2fa_uuid.remote.encrypt(
+                            delsec.secret
+                        ),
+                    }
+                ]
             },
         )
         return int(resp.data['deleted'])

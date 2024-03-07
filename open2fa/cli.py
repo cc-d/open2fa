@@ -157,6 +157,19 @@ def parse_args() -> argparse.ArgumentParser:
         dest='remote_command', required=True, help='Remote operations'
     )
 
+    remote_list = remote_subparsers.add_parser(
+        'list', help='List remote secrets'
+    )
+    remote_list.add_argument(
+        '-s',
+        '--secrets',
+        '--secret',
+        dest='show_secrets',
+        action='store_true',
+        help='Show full secrets',
+        default=False,
+    )
+
     # Init remote command
     remote_subparsers.add_parser('init', help='Initialize remote capabilities')
 
@@ -195,6 +208,37 @@ def parse_args() -> argparse.ArgumentParser:
     )
 
     return parser
+
+
+def _print_secrets(secrets: list[TOTPSecret], show_secrets: bool = False):
+    """Prints a list of TOTPSecrets to the console."""
+    max_name, max_secret = 4, 6
+    if len(secrets) > 0:
+        max_name = max([len(str(s.name)) for s in secrets])
+        max_secret = max(
+            [
+                (
+                    len(str(s.secret))
+                    if show_secrets
+                    else len(sec_trunc(s.secret))
+                )
+                for s in secrets
+            ]
+        )
+
+    print('\n' + 'Name'.ljust(max_name) + '    ' + 'Secret'.ljust(max_secret))
+
+    print('%s    %s' % ('-' * max_name, '-' * max_secret))
+    for s in secrets:
+        _sec = (
+            sec_trunc(s.secret).ljust(max_secret)
+            if not show_secrets
+            else s.secret.ljust(max_secret)
+        )
+        print(
+            '%s    %s' % (str(s.name).ljust(max_name), _sec.ljust(max_secret))
+        )
+    print()
 
 
 @logf()
@@ -249,7 +293,7 @@ def main(
     elif cli_args.command == 'remote':
         if cli_args.remote_command.startswith('ini'):
             Op2FA.remote_init()
-        if cli_args.remote_command.startswith('pus'):
+        elif cli_args.remote_command.startswith('pus'):
             pushed = Op2FA.remote_push()
             print(MSGS.PUSH_SUCCESS.format(len(pushed)))
         elif cli_args.remote_command.startswith('pul'):
@@ -263,6 +307,8 @@ def main(
                 secret=cli_args.secret, name=cli_args.name
             )
             print(MSGS.DEL_SUCCESS.format(del_count))
+        elif cli_args.remote_command.startswith('l'):
+            _print_secrets(Op2FA.remote_pull(), cli_args.show_secrets)
 
     elif cli_args.command == 'add':
         # empty add command
@@ -283,32 +329,7 @@ def main(
         )
     # list
     elif cli_args.command == 'list':
-        max_name, max_secret = 4, 6
-        if len(Op2FA.secrets) > 0:
-            max_name = max([len(str(s.name)) for s in Op2FA.secrets])
-            max_secret = max(
-                [
-                    len(str(s.secret)) if '-s' in sys.argv else 5
-                    for s in Op2FA.secrets
-                ]
-            )
-
-        print(
-            '\n' + 'Name'.ljust(max_name) + '    ' + 'Secret'.ljust(max_secret)
-        )
-
-        print('%s    %s' % ('-' * max_name, '-' * max_secret))
-        for s in Op2FA.secrets:
-            _sec = (
-                sec_trunc(s.secret).ljust(max_secret)
-                if cli_args.show_secrets is False
-                else s.secret.ljust(max_secret)
-            )
-            print(
-                '%s    %s'
-                % (str(s.name).ljust(max_name), _sec.ljust(max_secret))
-            )
-        print()
+        _print_secrets(Op2FA.secrets, cli_args.show_secrets)
     # delete
     elif cli_args.command == 'delete':
         if set([cli_args.name, cli_args.secret]) == {None}:
