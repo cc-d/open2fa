@@ -308,7 +308,9 @@ def main(
             )
             print(MSGS.DEL_SUCCESS.format(del_count))
         elif cli_args.remote_command.startswith('l'):
-            _print_secrets(Op2FA.remote_pull(), cli_args.show_secrets)
+            _print_secrets(
+                Op2FA.remote_pull(no_save_remote=True), cli_args.show_secrets
+            )
 
     elif cli_args.command == 'add':
         # empty add command

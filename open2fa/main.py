@@ -5,6 +5,7 @@ import os.path as osp
 import typing as TYPE
 import time
 import sys
+import logging
 from pathlib import Path
 from signal import signal, SIGWINCH
 
@@ -25,6 +26,8 @@ from .cli_utils import (
 from .common import O2FAUUID, RemoteSecret, TOTPSecret
 from .totp import TOTP2FACode, generate_totp_2fa_code
 from .utils import ApiResponse, apireq, sec_trunc, input_confirm
+
+_log = logging.getLogger(__name__)
 
 
 class Open2FA:
@@ -280,8 +283,21 @@ class Open2FA:
         return new_secrets
 
     @logf()
-    def remote_pull(self) -> TYPE.List[TOTPSecret]:
-        """Pull the secrets from the remote server."""
+    def _has_secret(self, secret: str, name: str) -> bool:
+        """Check if a secret exists in the Open2FA object."""
+        for s in self.secrets:
+            if s.secret == secret and s.name == name:
+                return True
+        return False
+
+    @logf()
+    def remote_pull(
+        self, no_save_remote: bool = False
+    ) -> TYPE.List[TOTPSecret]:
+        """Pull the secrets from the remote server.
+        ~return_only (bool): Only return the new secrets, do not write to file
+            or update the Open2FA object. Default: False
+        """
         if self.o2fa_uuid is None:
             raise EX.NoUUIDError()
 
@@ -293,15 +309,33 @@ class Open2FA:
             headers={'X-User-Hash': uhash},
             api_url=self.o2fa_api_url,
         )
-        new_secrets = []
+        pull_secrets = []
         for sec in api_resp.data['totps']:
-            new_sec = TOTPSecret(
-                remote.decrypt(sec['enc_secret']), sec['name']
+            pull_secrets.append(
+                TOTPSecret(remote.decrypt(sec['enc_secret']), sec['name'])
             )
-            new_secrets.append(new_sec)
-            self.secrets.append(new_sec)
+
+        # duplicate secrets are filtered out
+        rem_secrets = [
+            s for s in pull_secrets if not self._has_secret(s.secret, s.name)
+        ]
+
+        if len(pull_secrets) - len(rem_secrets) > 0:
+            _log.debug(
+                '{} duplicate secrets in remote pull'.format(
+                    set(pull_secrets) - set(rem_secrets)
+                )
+            )
+
+        # Only return the secrets without saving, used in remote info
+        if no_save_remote:
+            _log.debug('Returning pull_secrets without saving')
+            return pull_secrets
+
+        _log.debug('saving new secrets: %s' % rem_secrets)
+        self.secrets += rem_secrets
         self.write_secrets()
-        return new_secrets
+        return pull_secrets
 
     @logf()
     def remote_delete(

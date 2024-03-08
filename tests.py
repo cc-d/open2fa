@@ -1,6 +1,7 @@
-import pytest
+import pytest as pt
 from io import StringIO
 from unittest.mock import patch, MagicMock
+
 import sys
 import os
 import os.path as osp
@@ -20,7 +21,7 @@ TEST_TOTP = 'I65VU7K5ZQL7WB4E'
 TEST_URL = 'http://test'
 
 
-@pytest.fixture
+@pt.fixture
 def remote_init():
     """Fixture to initialize remote capabilities."""
     _rand = '/tmp/' + ranstr(10)
@@ -38,7 +39,7 @@ def remote_init():
     yield o2fa
 
 
-@pytest.fixture
+@pt.fixture
 def randir():
     """Fixture to generate a random directory path for testing."""
     _tmpdir = '/tmp/' + ranstr(10)
@@ -50,13 +51,13 @@ def randir():
     os.rmdir(_tmpdir)
 
 
-@pytest.fixture
+@pt.fixture
 def ranuuid():
     """Fixture to generate a random UUID for testing."""
     yield str(uuid4())
 
 
-@pytest.fixture
+@pt.fixture
 def o2fa_with_secret(randir):
     """Fixture to add a secret to the Open2FA instance."""
     with patch(
@@ -141,7 +142,7 @@ def test_add_secret_no_args_no_input(randir):
     with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
         with patch('sys.stdout', new=StringIO()) as fake_output:
             with patch('builtins.input', side_effect=['a', 'b', 'c', 'd']):
-                with pytest.raises(SystemExit):
+                with pt.raises(SystemExit):
                     main(dir=randir, api_url=TEST_URL, uuid=None)
 
     assert 'exiting' in fake_output.getvalue().lower()
@@ -256,7 +257,7 @@ def test_remote_push_no_uuid_error(o2fa_with_secret):
     """Test pushing the remote capabilities of Open2FA."""
     o2fa = o2fa_with_secret
 
-    with pytest.raises(EX.NoUUIDError):
+    with pt.raises(EX.NoUUIDError):
         o2fa.remote_push()
 
 
@@ -271,12 +272,12 @@ def test_handle_remote_delete_errors_nosecs():
     """Test the handle_remote_delete function."""
     o2fa = Open2FA('/tmp/%s' % ranstr(10), None, 'http://example')
 
-    with pytest.raises(EX.NoUUIDError):
+    with pt.raises(EX.NoUUIDError):
         o2fa.remote_delete()
 
     o2fa = Open2FA('/tmp/%s' % ranstr(10), str(uuid4()), 'http://example')
 
-    with pytest.raises(EX.DelNoNameSec):
+    with pt.raises(EX.DelNoNameSec):
         o2fa.remote_delete()
 
 
@@ -285,7 +286,7 @@ def test_handle_remote_delete_no_sec_found(remote_init: Open2FA):
     o2fa = remote_init
     o2fa.add_secret(TEST_TOTP, 'name1')
 
-    with pytest.raises(EX.DelNoNameSecFound):
+    with pt.raises(EX.DelNoNameSecFound):
         o2fa.remote_delete('name2')
 
 
@@ -345,7 +346,7 @@ def test_remote_delete(remote_init):
     assert 'Deleted 1 secret' in fake_output.getvalue()
 
 
-@pytest.mark.parametrize('version_arg', ['-v', '--version'])
+@pt.mark.parametrize('version_arg', ['-v', '--version'])
 def test_version(version_arg):
     """Test the version command."""
     with patch('open2fa.cli.sys.argv', ['open2fa', version_arg]):
@@ -422,25 +423,66 @@ def test_autosize_generate_code(randir):
         _autosize_generate_code(o2fa, w=w, h=h)
 
 
-def test_remote_list(ranuuid, randir):
-    """Test the remote list command."""
+_RETDATA = {
+    'totps': [
+        {'name': 'name1', 'enc_secret': TEST_TOTP},
+        {'name': 'name2', 'enc_secret': TEST_TOTP},
+        {'name': 'name3', 'enc_secret': TEST_TOTP},
+    ]
+}
+
+
+@pt.mark.parametrize(
+    'no_save_remote, ret_data, show_secrets',
+    [
+        (True, _RETDATA, False),
+        (False, _RETDATA, False),
+        (True, {'totps': []}, False),
+        (False, {'totps': []}, False),
+        (True, _RETDATA, True),
+    ],
+)
+def test_remote_list_pull(
+    no_save_remote, ret_data, show_secrets, randir, ranuuid
+):
     o2fa = Open2FA(randir, ranuuid, 'http://example')
+    o2fa.add_secret(TEST_TOTP, 'name1')
+
     with patch('open2fa.main.apireq') as fake_apireq:
-        fake_apireq.return_value.data = {'totps': []}
+        for i, data in enumerate(ret_data['totps']):
+            ret_data['totps'][i]['enc_secret'] = o2fa.o2fa_uuid.remote.encrypt(
+                TEST_TOTP
+            )
+
+        fake_apireq.return_value.data = ret_data
+        with patch('open2fa.main.Open2FA.write_secrets') as fake_write_secrets:
+            remote_secs = o2fa.remote_pull(no_save_remote=no_save_remote)
+            remote_names = {sec.name for sec in remote_secs}
+
+    if no_save_remote:
+        assert not fake_write_secrets.called
+        assert len(remote_secs) == len(ret_data['totps'])
+        assert len(o2fa.secrets) == 1
+    else:
+        assert fake_write_secrets.called
+        assert len(remote_secs) == len(ret_data['totps'])
+        if ret_data['totps']:
+            assert len(o2fa.secrets) == len(ret_data['totps'])
+        else:
+            assert len(o2fa.secrets) == 1
+
+    with patch('open2fa.main.apireq') as fake_apireq:
+        fake_apireq.return_value.data = ret_data
         out = main_out(
-            ['open2fa', 'remote', 'list'],
+            ['open2fa', 'remote', 'list'] + (['-s'] if show_secrets else []),
             dir=o2fa.o2fa_dir,
             api_url='http://example',
-            uuid=ranuuid,
+            uuid=str(o2fa.o2fa_uuid.uuid),
         )
 
-    with patch('open2fa.main.Open2FA.remote_pull') as fake_remote_list:
-        fake_remote_list.return_value = [TOTPSecret(TEST_TOTP, 'name1')]
-        out = main_out(
-            ['open2fa', 'remote', 'list'],
-            dir=o2fa.o2fa_dir,
-            api_url='http://example',
-            uuid=ranuuid,
-        )
-
-    assert 'name1' in out
+    for sec in ret_data['totps']:
+        assert sec['name'] in out
+        if show_secrets:
+            assert TEST_TOTP in out
+        else:
+            assert '...' in out

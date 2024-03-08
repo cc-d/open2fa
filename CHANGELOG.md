@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.2.0
+
+Fixed a bug with remote list where the secrets were being saved due to re-use of the same remote pull method. Added regression tests for this.
+
+## 1.1.9
+
+remote list command + tests
+
 ## 1.1.8
 
 Fixed the remote examples in the README.md
