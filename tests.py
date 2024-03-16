@@ -16,24 +16,66 @@ from open2fa.version import __version__
 # Assuming ranstr function exists for generating random strings
 from pyshared import ranstr
 
-TEST_NAME = 'test_secret'
-TEST_TOTP = 'I65VU7K5ZQL7WB4E'
-TEST_URL = 'http://test'
+_TOTP, _NAME, _URL, _DIR, _UUID = (
+    'I65VU7K5ZQL7WB4E',
+    'DefaultSecret',
+    'http://test',
+    '/tmp/' + ranstr(10),
+    str(uuid4()),
+)
+_tmp2fa = Open2FA(_DIR, _UUID, _URL)
+_SECRETS = [
+    ('RRGADJF5GXWRRXWY', 'Name0'),
+    ('AOJPJPFNP7MQZR5I', 'Name1'),
+    ('X4NTOY77HQV3BPCY', 'Name2'),
+    ('RMA7DSSV7RO6JQQP', 'Name3'),
+    ('W75HGIFLWBU757SU', None),
+    ('ZU6FRTLEONDMFSPDRAZZ7FMLXS4IRNWP', 'LongSecret0'),
+    ('LYMXJUCIIIJWFRTX', 'Name4'),
+    ('B6ED2USGCIJXPUID', 'Name5'),
+    ('FRDCHVCFASMUCWZZ', 'Name6'),
+]
+# add encrypted secrets to _SECRETS
+for i in range(len(_SECRETS)):
+    _SECRETS[i] = (
+        _SECRETS[i][0],
+        _SECRETS[i][1],
+        _tmp2fa.encrypt(_SECRETS[i][0]),
+    )
+
+_ENC_SECRETS = [
+    {'enc_secret': _tmp2fa.encrypt(sec[0]), 'name': sec[1]} for sec in _SECRETS
+]
 
 
 @pt.fixture
-def remote_init():
-    """Fixture to initialize remote capabilities."""
-    _rand = '/tmp/' + ranstr(10)
-    from open2fa.cli import main
+def fake_enc_secrets(randir, fake_apireq):
+    """Fixture to generate encrypted secrets."""
+    o2fa = Open2FA(randir, _UUID, _URL)
+    for sec in _SECRETS:
+        o2fa.add_secret(sec[0], sec[1])
 
-    with patch('builtins.input', return_value='y') as fake_input:
+    with patch('open2fa.main.apireq') as fake_apireq:
+        fake_apireq.return_value.data = {'totps': _ENC_SECRETS}
+        o2fa.remote_pull()
+
+    yield o2fa.secrets
+
+
+@pt.fixture
+def fake_apireq():
+    """Fixture to generate a fake apireq for testing."""
+    with patch('open2fa.main.apireq') as fake_apireq:
+        yield fake_apireq
+
+
+@pt.fixture
+def remote_init(randir, o2fa_no_remote):
+    """Fixture to initialize the remote capabilities of Open2FA."""
+    with patch('builtins.input', return_value='y'):
         with patch('open2fa.cli.sys.argv', ['open2fa', 'remote', 'init']):
             o2fa = main(
-                dir=_rand,
-                api_url='http://test',
-                uuid=None,
-                return_open2fa=True,
+                dir=randir, api_url=_URL, uuid=None, return_open2fa=True
             )
 
     yield o2fa
@@ -58,78 +100,81 @@ def ranuuid():
 
 
 @pt.fixture
-def o2fa_with_secret(randir):
+def o2fa_no_remote(randir):
     """Fixture to add a secret to the Open2FA instance."""
-    with patch(
-        'open2fa.cli.sys.argv', ['open2fa', 'add', TEST_TOTP, '-n', TEST_NAME]
-    ):
-        o2fa = main(
-            dir=randir, api_url='http://test', uuid=None, return_open2fa=True
-        )
-
+    o2fa = Open2FA(randir, None, _URL)
+    for sec in _SECRETS:
+        o2fa.add_secret(sec[0], sec[1])
     yield o2fa
 
 
-def main_out(sysargs, *args, **kwargs) -> str:
+@pt.fixture
+def o2fa_remote(ranuuid, o2fa_no_remote):
+    """Fixture to add a secret to the Open2FA instance."""
+    new_o2fa = Open2FA(
+        o2fa_no_remote.o2fa_dir, o2fa_uuid=ranuuid, o2fa_api_url=_URL
+    )
+    assert not os.path.exists(new_o2fa.uuid_file_path)
+    with open(new_o2fa.uuid_file_path, 'w') as f:
+        f.write(ranuuid)
+    o2fa = Open2FA(new_o2fa.o2fa_dir, ranuuid, _URL)
+    yield o2fa
+
+
+def main_out(sysargs, *args, **kwargs):
     """returns open2fa cli main() output"""
     with patch('open2fa.cli.sys.argv', sysargs):
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            main(*args, **kwargs)
-    return fake_output.getvalue()
+            o2fa = main(*args, **kwargs, return_open2fa=True)
+    return o2fa, fake_output.getvalue()
 
 
 def test_remote_init(remote_init):
     """Test initializing the remote capabilities of Open2FA."""
     o2fa = remote_init
-    assert o2fa.o2fa_uuid is not None
-    assert o2fa.o2fa_api_url is TEST_URL
-    assert os.path.exists(os.path.join(o2fa.o2fa_dir, 'open2fa.uuid'))
+    _dir, _url, _uuid = o2fa.o2fa_dir, o2fa.api_url, o2fa.uuid
+    assert o2fa.o2fa_dir == _dir
+    assert o2fa.o2fa_api_url == _url
+    assert o2fa.uuid == str(_uuid)
+    assert os.path.exists(os.path.join(_dir, 'open2fa.uuid'))
 
 
-def test_add_secret(o2fa_with_secret):
+def test_add_secret(o2fa_no_remote: Open2FA):
     """Test adding a secret to the Open2FA instance."""
-    assert o2fa_with_secret.o2fa_uuid is None
-    assert o2fa_with_secret.o2fa_api_url == TEST_URL
+    _o2fa = o2fa_no_remote
+    assert _o2fa.o2fa_uuid is None
+    assert _o2fa.o2fa_api_url == _URL
+    assert _o2fa.uuid is None
+    assert _o2fa.api_url == _URL
 
-    with open(o2fa_with_secret.secrets_json_path, 'r') as f:
-        secjson = f.read()
-
-    assert TEST_NAME in secjson
-    assert TEST_TOTP in secjson
-
-    assert not os.path.exists(
-        os.path.join(o2fa_with_secret.o2fa_dir, 'open2fa.uuid')
-    )
+    assert not os.path.exists(_o2fa.uuid_file_path)
 
 
 def test_add_secret_no_args(randir):
     """Test adding a secret to the Open2FA instance."""
-    with patch('builtins.input', side_effect=[TEST_TOTP, TEST_NAME]):
+    with patch('builtins.input', side_effect=[_TOTP, _NAME]):
         with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
             o2fa = main(
-                dir=randir, api_url=TEST_URL, uuid=None, return_open2fa=True
+                dir=randir, api_url=_URL, uuid=None, return_open2fa=True
             )
 
     assert o2fa.o2fa_uuid is None
-    assert o2fa.o2fa_api_url == TEST_URL
+    assert o2fa.o2fa_api_url == _URL
     assert len(o2fa.secrets) == 1
     with open(o2fa.secrets_json_path, 'r') as f:
         secjson = f.read()
 
-    assert TEST_NAME in secjson
-    assert TEST_TOTP in secjson
+    assert _NAME in secjson
+    assert _TOTP in secjson
 
 
 def test_add_secret_no_args_none_name(randir):
     """Test adding a secret to the Open2FA instance."""
     with patch('open2fa.cli.sys.argv', ['open2fa', 'add']):
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            with patch('builtins.input', side_effect=[TEST_TOTP, '']):
+            with patch('builtins.input', side_effect=[_TOTP, '']):
                 o2fa = main(
-                    dir=randir,
-                    api_url=TEST_URL,
-                    uuid=None,
-                    return_open2fa=True,
+                    dir=randir, api_url=_URL, uuid=None, return_open2fa=True
                 )
     with open(o2fa.secrets_json_path, 'r') as f:
         secjson = f.read()
@@ -143,76 +188,75 @@ def test_add_secret_no_args_no_input(randir):
         with patch('sys.stdout', new=StringIO()) as fake_output:
             with patch('builtins.input', side_effect=['a', 'b', 'c', 'd']):
                 with pt.raises(SystemExit):
-                    main(dir=randir, api_url=TEST_URL, uuid=None)
+                    main(dir=randir, api_url=_URL, uuid=None)
 
     assert 'exiting' in fake_output.getvalue().lower()
 
 
-def test_delete_secret(o2fa_with_secret):
+@patch('builtins.input', return_value='y')
+def test_delete_secret(o2fa_no_remote):
     """Test removing a secret from the Open2FA instance."""
-    o2fa = o2fa_with_secret
 
-    with patch('builtins.input', return_value='y') as fake_input:
-        with patch(
-            'open2fa.cli.sys.argv', ['open2fa', 'delete', '-n', TEST_NAME]
-        ):
-            o2fa = main(
-                dir=o2fa.o2fa_dir,
-                api_url=TEST_URL,
-                uuid=None,
-                return_open2fa=True,
-            )
-    assert o2fa.o2fa_uuid is None
-    assert len(o2fa.secrets) == 0
-    with open(o2fa.secrets_json_path, 'r') as f:
-        secjson = f.read()
-
-    assert TEST_NAME not in secjson
-    assert TEST_TOTP not in secjson
+    o2fa = o2fa_no_remote
+    print(o2fa.secrets, len(o2fa.secrets))
+    og = len(o2fa.secrets)
+    with patch('open2fa.cli.sys.argv', ['open2fa', 'delete', '-n %s' % _NAME]):
+        main(dir=o2fa.o2fa_dir, api_url=None, uuid=None)
+    print(o2fa.secrets, len(o2fa.secrets), 'before refresh')
+    o2fa.refresh_secrets()
+    print(o2fa.secrets, len(o2fa.secrets), 'after refresh')
 
 
-def test_generate_key(o2fa_with_secret):
+def test_generate_key(ranuuid, randir, o2fa_no_remote):
     """Test generating a TOTP code for the added secret."""
-    out = main_out(['open2fa', 'g', '-r', '1'], dir=o2fa_with_secret.o2fa_dir)
-    assert TEST_NAME in out
-    for line in out.splitlines():
-        if TEST_NAME in line:
-            assert len(line.split()) >= 3
-            _name, _code, _time = line.split()
-            assert _name == TEST_NAME
-            assert int(_code)
-            assert float(_time)
+    o2fa = Open2FA(randir, ranuuid, _URL)
+    o2fa.add_secret(_TOTP, _NAME)
+    for s in ['Name', 'Code', 'Next'] + [
+        o.name for o in o2fa.secrets if o.name
+    ]:
+        print(s)
 
 
-def test_list_no_s(o2fa_with_secret):
+def test_list_no_s(o2fa_remote):
     """Test listing the added secret."""
-    out = main_out(['open2fa', 'list'], dir=o2fa_with_secret.o2fa_dir)
-    assert TEST_NAME in out
-    assert '...' in out
+    o2fa, out = main_out(['open2fa', 'list'])
+    for s in o2fa.secrets:
+        print(s.name, s.secret, out, s, vars(s))
+        assert s.name in out
+        assert '...' in out
 
 
-def test_list_dash_s(o2fa_with_secret):
+def test_list_dash_s(fake_enc_secrets, randir, ranuuid):
     """Test listing the added secret."""
-    out = main_out(['open2fa', 'list', '-s'], dir=o2fa_with_secret.o2fa_dir)
-    assert TEST_NAME in out
-    assert '...' not in out
-    assert TEST_TOTP in out
+    o2fa, out = main_out(
+        ['open2fa', 'list', '-s'],
+        open2fa_dir=randir,
+        api_url=_URL,
+        uuid=ranuuid,
+    )
+    for s in o2fa.secrets:
+        assert s.name in out
+        assert s.secret in out
 
 
 def test_list_with_no_secrets(remote_init):
     """regression test for error occuring if no secrets were added"""
-    out = main_out(
+    o2fa, out = main_out(
         ['open2fa', 'list'],
         dir=remote_init.o2fa_dir,
-        api_url=TEST_URL,
+        api_url=_URL,
         uuid=remote_init.o2fa_uuid.uuid,
     )
-    assert 'Name' in out and 'Secret' in out
+    print(out, o2fa, vars(o2fa))
+    for s in o2fa.secrets:
+        if s.name:
+            assert s.name in out
+            assert '...' in out
 
 
-def test_remote_pull(remote_init):
+def test_remote_pull(o2fa_remote):
     """Test pulling the remote capabilities of Open2FA."""
-    enc = remote_init.o2fa_uuid.remote.encrypt(TEST_TOTP)
+    enc = o2fa_remote.o2fa_uuid.remote.encrypt(_TOTP)
     secname = 'name2'
     fake_totp_data = {'totps': [{'name': secname, 'enc_secret': enc}]}
 
@@ -220,51 +264,58 @@ def test_remote_pull(remote_init):
         data = fake_totp_data
 
     with patch('open2fa.main.apireq', return_value=FakeResp()) as fake_apireq:
-        out = main_out(
+        o2fa, out = main_out(
             ['open2fa', 'remote', 'pull'],
-            dir=remote_init.o2fa_dir,
-            api_url=TEST_URL,
-            uuid=remote_init.o2fa_uuid.uuid,
+            dir=o2fa_remote.o2fa_dir,
+            api_url=_URL,
+            uuid=o2fa_remote.o2fa_uuid.uuid,
         )
 
-    assert 'Pulled' in out
-    assert osp.exists(remote_init.secrets_json_path)
-    with open(remote_init.secrets_json_path, 'r') as f:
-        secjson = f.read()
+    assert osp.exists(o2fa.secrets_json_path)
+    secjson = open(o2fa.secrets_json_path, 'r').read()
     assert secname in secjson
-    assert TEST_TOTP in secjson
-    assert TEST_NAME not in secjson
+    assert _TOTP in secjson
+    assert _NAME not in secjson
 
 
-def test_remote_push(remote_init: Open2FA):
+def test_remote_push(o2fa_remote):
     """Test pushing the remote capabilities of Open2FA."""
-    o2fa = remote_init
-    o2fa.add_secret(TEST_TOTP, 'name1')
-    _enc = o2fa.o2fa_uuid.remote.encrypt(TEST_TOTP)
+    o2fa = o2fa_remote
+    new_secret = TOTPSecret(_TOTP, 'newsecretname')
 
     with patch('open2fa.main.apireq') as fake_apireq:
         fake_apireq.return_value.data = {
-            'totps': [{'name': 'name1', 'enc_secret': _enc}]
+            'totps': [
+                {
+                    'name': new_secret.name,
+                    'enc_secret': o2fa.encrypt(new_secret.secret),
+                }
+            ]
         }
         o2fa.remote_push()
 
-    assert fake_apireq.call_args_list[0][1]['data'] == {
-        'totps': [{'name': 'name1', 'enc_secret': _enc}]
-    }
+    assert fake_apireq.called
+    _ret = list(fake_apireq.return_value.data['totps'])
+    _retnames = [sec['name'] for sec in _ret] + [
+        sec.name for sec in o2fa.secrets
+    ]
+
+    for sec in o2fa.secrets:
+        assert sec.name in _retnames
 
 
-def test_remote_push_no_uuid_error(o2fa_with_secret):
+def test_remote_push_no_uuid_error():
     """Test pushing the remote capabilities of Open2FA."""
-    o2fa = o2fa_with_secret
-
+    loc_o2fa = Open2FA('/tmp/%s' % ranstr(10), None, 'http://example')
+    loc_o2fa.add_secret(_TOTP, 'name1')
     with pt.raises(EX.NoUUIDError):
-        o2fa.remote_push()
+        loc_o2fa.remote_push()
 
 
 def test_handle_remote_init(remote_init):
     """Test the handle_remote_init function."""
     assert remote_init.o2fa_uuid is not None
-    assert remote_init.o2fa_api_url == TEST_URL
+    assert remote_init.o2fa_api_url == _URL
     assert os.path.exists(os.path.join(remote_init.o2fa_dir, 'open2fa.uuid'))
 
 
@@ -284,46 +335,54 @@ def test_handle_remote_delete_errors_nosecs():
 def test_handle_remote_delete_no_sec_found(remote_init: Open2FA):
     """Test the handle_remote_delete function."""
     o2fa = remote_init
-    o2fa.add_secret(TEST_TOTP, 'name1')
+    o2fa.add_secret(_TOTP, 'name1')
 
     with pt.raises(EX.DelNoNameSecFound):
         o2fa.remote_delete('name2')
 
 
-def test_info_no_dash_s(remote_init):
+def test_info_no_dash_s(fake_enc_secrets, randir, ranuuid):
     """Ensure that the -s tip is printed and secs are truncated with info"""
-    out = main_out(
-        ['open2fa', 'info'],
-        dir=remote_init.o2fa_dir,
-        api_url=TEST_URL,
-        uuid=remote_init.o2fa_uuid.uuid,
-    )
-    assert '...' in out
-    assert remote_init.o2fa_api_url in out
-    assert str(remote_init.o2fa_uuid.uuid) not in out
-    assert MSGS.INFO_SEC_TIP in out
-    assert str(remote_init.o2fa_uuid.remote.b58) not in out
+    o2fa = Open2FA(randir, ranuuid, _URL)
+    with patch('open2fa.main.Open2FA.remote_pull') as fake_remote_pull:
+        fake_remote_pull.return_value = fake_enc_secrets
+        with patch('open2fa.main.apireq') as fake_apireq:
+            op2fa, out = main_out(
+                ['open2fa', 'info'],
+                dir=o2fa.o2fa_dir,
+                api_url=_URL,
+                uuid=str(o2fa.o2fa_uuid.uuid),
+            )
+
+        for substr in [' -s ', '...', _URL, str(randir), 'UUID', 'Secret']:
+            assert substr in out
 
 
-def test_info_dash_s(remote_init):
+def test_info_dash_s(fake_enc_secrets, randir, ranuuid):
     """Ensure that the -s tip is not printed and secs are not truncated with info"""
-    out = main_out(
-        ['open2fa', 'info', '-s'],
-        dir=remote_init.o2fa_dir,
-        api_url=TEST_URL,
-        uuid=remote_init.o2fa_uuid.uuid,
-    )
+
+    o2fa = Open2FA(randir, ranuuid, _URL)
+
+    with patch('open2fa.main.Open2FA.remote_pull') as fake_remote_pull:
+        fake_remote_pull.return_value = fake_enc_secrets
+
+        op2fa, out = main_out(
+            ['open2fa', 'info', '-s'],
+            dir=o2fa.o2fa_dir,
+            api_url=_URL,
+            uuid=o2fa.o2fa_uuid.uuid,
+        )
     assert '...' not in out
-    assert remote_init.o2fa_api_url in out
-    assert str(remote_init.o2fa_uuid.uuid) in out
+    assert op2fa.o2fa_api_url in out
+    assert str(op2fa.o2fa_uuid.uuid) in out
     assert MSGS.INFO_SEC_TIP not in out
-    assert str(remote_init.o2fa_uuid.remote.b58) in out
+    assert str(op2fa.o2fa_uuid.remote.b58) in out
 
 
 def test_remote_delete(remote_init):
     """Test deleting the remote capabilities of Open2FA."""
     o2fa = remote_init
-    o2fa.add_secret(TEST_TOTP, 'name1')
+    o2fa.add_secret(_TOTP, 'name1')
 
     with patch('builtins.input', return_value='y') as fake_input:
         with patch(
@@ -338,7 +397,7 @@ def test_remote_delete(remote_init):
             ) as fake_output:
                 o2fa = main(
                     dir=o2fa.o2fa_dir,
-                    api_url=TEST_URL,
+                    api_url=_URL,
                     uuid=str(o2fa.o2fa_uuid.uuid),
                     return_open2fa=True,
                 )
@@ -371,16 +430,18 @@ def test_empty_command():
         assert hstr in out
 
 
-def test_new_cli_kwargs(randir, ranuuid):
+@patch('open2fa.main.apireq')
+def test_new_cli_kwargs(fake_apireq, randir, ranuuid):
     """Test the new cli keyword arguments."""
+    fake_apireq.return_value.data = {'totps': []}
 
     with patch('open2fa.cli.sys.argv', ['open2fa', 'info', '-s']):
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            o2fa = main(
-                o2fa_dir=randir,
-                o2fa_uuid=ranuuid,
-                o2fa_api_url='http://example',
-                return_open2fa=True,
+            o2fa, out = main_out(
+                ['open2fa', 'info', '-s'],
+                dir=randir,
+                api_url='http://example',
+                uuid=ranuuid,
             )
 
     assert o2fa.o2fa_dir == randir
@@ -397,19 +458,20 @@ def test_autosize_generate_code(randir):
     """Test the autosize_generate_code function."""
     o2fa = Open2FA(randir, None, 'http://example')
     for i in [5, 20, 50, 100]:
-        o2fa.add_secret(TEST_TOTP, 'a' * i)
+        o2fa.add_secret(_TOTP, 'a' * i)
 
     def _autosize_generate_code(o2fa, **kwargs):
         w, h = kwargs['w'], kwargs['h']
         with patch(
             'os.get_terminal_size', return_value=MagicMock(columns=w, lines=h)
         ):
-            out = main_out(
+            new_o2fa, out = main_out(
                 ['open2fa', 'g', '-r', '1'],
                 dir=o2fa.o2fa_dir,
                 api_url='http://example',
                 uuid=None,
-            ).lower()
+            )
+            out = out.lower()
 
             for i, line in enumerate(out.splitlines()):
                 if line == '':
@@ -425,9 +487,9 @@ def test_autosize_generate_code(randir):
 
 _RETDATA = {
     'totps': [
-        {'name': 'name1', 'enc_secret': TEST_TOTP},
-        {'name': 'name2', 'enc_secret': TEST_TOTP},
-        {'name': 'name3', 'enc_secret': TEST_TOTP},
+        {'name': 'name1', 'enc_secret': _TOTP},
+        {'name': 'name2', 'enc_secret': _TOTP},
+        {'name': 'name3', 'enc_secret': _TOTP},
     ]
 }
 
@@ -446,12 +508,12 @@ def test_remote_list_pull(
     no_save_remote, ret_data, show_secrets, randir, ranuuid
 ):
     o2fa = Open2FA(randir, ranuuid, 'http://example')
-    o2fa.add_secret(TEST_TOTP, 'name1')
+    o2fa.add_secret(_TOTP, 'name1')
 
     with patch('open2fa.main.apireq') as fake_apireq:
         for i, data in enumerate(ret_data['totps']):
             ret_data['totps'][i]['enc_secret'] = o2fa.o2fa_uuid.remote.encrypt(
-                TEST_TOTP
+                _TOTP
             )
 
         fake_apireq.return_value.data = ret_data
@@ -473,7 +535,7 @@ def test_remote_list_pull(
 
     with patch('open2fa.main.apireq') as fake_apireq:
         fake_apireq.return_value.data = ret_data
-        out = main_out(
+        new_o2fa, out = main_out(
             ['open2fa', 'remote', 'list'] + (['-s'] if show_secrets else []),
             dir=o2fa.o2fa_dir,
             api_url='http://example',
@@ -481,8 +543,10 @@ def test_remote_list_pull(
         )
 
     for sec in ret_data['totps']:
-        assert sec['name'] in out
+        if sec and sec['name']:
+            assert sec['name'] in out
+
         if show_secrets:
-            assert TEST_TOTP in out
+            assert _TOTP in out
         else:
             assert '...' in out

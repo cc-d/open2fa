@@ -23,10 +23,8 @@ logger = logging.getLogger(__name__)
 def ensure_open2fa_dir(dirpath: TYPE.Union[str, Path]) -> str:
     """Ensure the .open2fa directory exists in the user's home directory
     with the correct permissions.
-    Args:
-        dirpath (str | Path): Path to the open2fa directory.
-    Returns:
-        str: path to the open2fa directory w/ proper permissions.
+    ~dirpath (str | Path): Path to the open2fa directory.
+    -> str: path to the open2fa directory w/ proper permissions.
     """
     if not osp.isdir(dirpath):
         logger.info(f"Creating open2fa directory at '{dirpath}'")
@@ -44,10 +42,8 @@ def ensure_open2fa_dir(dirpath: TYPE.Union[str, Path]) -> str:
 
 def ensure_secrets_json(key_json_path: TYPE.Union[str, Path]) -> str:
     """Ensure the secrets.json file exists in the open2fa directory.
-    Args:
-        key_json_path (str | Path): Path to the secrets.json file.
-    Returns:
-        str: path to the secrets.json file.
+    ~key_json_path (str | Path): Path to the secrets.json file.
+    -> str: path to the secrets.json file.
     """
     if not osp.isfile(key_json_path):
         logger.info(f"Creating secrets.json file at '{key_json_path}'")
@@ -64,13 +60,10 @@ def ensure_secrets_json(key_json_path: TYPE.Union[str, Path]) -> str:
     return key_json_path
 
 
-def read_secrets_json(filepath: TYPE.Union[str, Path]) -> dict:
+def read_secrets_json(filepath: TYPE.Union[str, Path]) -> TYPE.Dict:
     """Read the secrets.json file and return the contents.
-    Args:
-        o2fa_dir (str | Path): Path to the open2fa directory.
-        filename (str): The name of the secrets.json file.
-    Returns:
-        TYPE.Dict: The contents of the secrets.json file.
+    ~filepath (str | Path): Path to the secrets.json file.
+    -> TYPE.Dict: The contents of the secrets.json file.
     """
     key_json_path = ensure_secrets_json(filepath)
     with open(key_json_path, 'r') as f:
@@ -79,10 +72,8 @@ def read_secrets_json(filepath: TYPE.Union[str, Path]) -> dict:
 
 def write_secrets_json(filepath: TYPE.Union[str, Path], data: dict) -> None:
     """Safely write data to the secrets.json file.
-    Args:
-        o2fa_dir (str): Path to the open2fa directory.
-        data (TYPE.Dict): The data to write to the secrets.json file.
-        filename (str): The name of the secrets.json file.
+    ~data (TYPE.Dict): The data to write to the secrets.json file.
+    ~filename (str): The name of the secrets.json file.
     """
     json_path = ensure_secrets_json(filepath)
     # safely write the data to the file

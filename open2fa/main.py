@@ -6,6 +6,7 @@ import typing as TYPE
 import time
 import sys
 import logging
+from functools import wraps
 from pathlib import Path
 from signal import signal, SIGWINCH
 
@@ -33,9 +34,11 @@ _log = logging.getLogger(__name__)
 class Open2FA:
     o2fa_dir: str
     secrets_json_path: str
-    secrets: TYPE.List[TOTPSecret]
     o2fa_uuid: TYPE.Union[O2FAUUID, None]
     o2fa_api_url: TYPE.Union[str, None]
+
+    remote_secrets: TYPE.List[TOTPSecret]
+    secrets: TYPE.List[TOTPSecret] = []
 
     def __init__(
         self,
@@ -63,6 +66,11 @@ class Open2FA:
             if o2fa_api_url is not None
             else config.OPEN2FA_API_URL
         )
+
+    @property
+    def fs_secret_json(self) -> TYPE.Tuple[str, TYPE.Union[TYPE.Dict, None]]:
+        """returns the secrets.json contents"""
+        return read_secrets_json(self.secrets_json_path) or None
 
     @logf()
     def set_uuid(self, uuid: str) -> O2FAUUID:
@@ -345,33 +353,71 @@ class Open2FA:
             headers={'X-User-Hash': uhash},
             api_url=self.o2fa_api_url,
         )
-        pull_secrets = []
-        for sec in api_resp.data['totps']:
-            pull_secrets.append(
-                TOTPSecret(remote.decrypt(sec['enc_secret']), sec['name'])
-            )
+        pull_secrets = [
+            TOTPSecret(remote.decrypt(s['enc_secret']), s['name'])
+            for s in api_resp.data['totps']
+        ]
 
         # duplicate secrets are filtered out
-        rem_secrets = [
+        new_secs = [
             s for s in pull_secrets if not self._has_secret(s.secret, s.name)
         ]
 
-        if len(pull_secrets) - len(rem_secrets) > 0:
-            _log.debug(
-                '{} duplicate secrets in remote pull'.format(
-                    set(pull_secrets) - set(rem_secrets)
-                )
-            )
-
         # Only return the secrets without saving, used in remote info
         if no_save_remote:
-            _log.debug('Returning pull_secrets without saving')
+            _log.debug('Returning pull_secrets no save: %s' % pull_secrets)
             return pull_secrets
 
-        _log.debug('saving new secrets: %s' % rem_secrets)
-        self.secrets += rem_secrets
+        _log.debug('saving new secrets: %s' % new_secs)
+
+        self.secrets.extend(new_secs)
         self.write_secrets()
         return pull_secrets
+
+    @property
+    @logf()
+    def remote_secrets(self) -> TYPE.List[TOTPSecret]:
+        """Return the remote secrets."""
+        return self.remote_pull(no_save_remote=True)
+
+    @property
+    def uuid(self) -> TYPE.Union[str, None]:
+        """Return the Open2FA UUID."""
+        if hasattr(self, 'o2fa_uuid') and self.o2fa_uuid is not None:
+            return str(self.o2fa_uuid.uuid)
+
+    @property
+    def uuid_file_path(self) -> str:
+        """Return the Open2FA UUID file path."""
+        return os.path.join(self.o2fa_dir, 'open2fa.uuid')
+
+    @wraps(RemoteSecret.encrypt)
+    def encrypt(self, *args, **kwargs):
+        if hasattr(self, 'remote') and hasattr(self.remote, 'encrypt'):
+            return self.remote.encrypt(*args, **kwargs)
+
+    encrypt.__doc__ = RemoteSecret.encrypt.__doc__
+
+    @property
+    def decrypt(self, *args, **kwargs):
+        """shortcut for open2fa.o2fa_uuid.remote.decrypt"""
+        if hasattr(self, 'remote') and hasattr(self.remote, 'decrypt'):
+            return self.remote.decrypt(*args, **kwargs)
+
+    @property
+    def dir(self) -> str:
+        """Return the Open2FA directory."""
+        return str(osp.abspath(self.o2fa_dir))
+
+    @property
+    def api_url(self) -> TYPE.Union[str, None]:
+        """Return the Open2FA API URL."""
+        return self.o2fa_api_url
+
+    def refresh(self) -> TYPE.List[TOTPSecret]:
+        """Refresh the remote secrets object state."""
+        # create new o2fa object with the same attributes
+        return super().__init__(self.o2fa_dir, self.uuid, self.o2fa_api_url)
 
     @logf()
     def remote_delete(

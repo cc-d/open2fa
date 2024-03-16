@@ -132,3 +132,6 @@ class TOTPSecret:
     def enc_json(self, enc_func: TYPE.Callable[[str], str]) -> dict:
         """Returns as open2fa server expected json payload format"""
         return {'name': self.name, 'enc_secret': enc_func(self.secret)}
+
+    def __getitem__(self, key: str) -> str:
+        return getattr(self, key)
