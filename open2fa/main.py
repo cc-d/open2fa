@@ -417,7 +417,11 @@ class Open2FA:
     def refresh(self) -> TYPE.List[TOTPSecret]:
         """Refresh the remote secrets object state."""
         # create new o2fa object with the same attributes
-        return super().__init__(self.o2fa_dir, self.uuid, self.o2fa_api_url)
+        return Open2FA(
+            o2fa_dir=self.o2fa_dir,
+            o2fa_uuid=self.uuid,
+            o2fa_api_url=self.api_url,
+        )
 
     @logf()
     def remote_delete(
