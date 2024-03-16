@@ -5,6 +5,7 @@ import typing as TYPE
 from hashlib import sha256
 from time import time
 from uuid import UUID, uuid4
+from functools import wraps
 
 from base58 import b58decode, b58encode
 from cryptography.hazmat.backends import default_backend
@@ -23,13 +24,11 @@ class RemoteSecret:
 
     def __init__(self, sha256_hash_bytes: bytes, iv=b'0123456789abcdef'):
         """Create a new O2FASecret objet.
-        Args:
-            sha256_hash_bytes (bytes): the last 16 bytes of the sha256 hash of
-                the o2fa uuid
-            iv (bytes): the initialization vector
-                Default: b'0123456789abcdef'
-        Returns:
-            O2FASecret: the new O2FASecret object
+        ~sha256_hash_bytes (bytes): the last 16 bytes of the sha256 hash of
+            the open2fa uuid
+        ~iv (bytes): the initialization vector to use for encryption
+            Default: b'0123456789abcdef'
+        -> O2FASecret: the new O2FASecret object
         """
         self.secret = sha256_hash_bytes
         self.b58 = b58encode(self.secret).decode()
@@ -129,3 +128,7 @@ class TOTPSecret:
 
     def json(self) -> dict:
         return {'secret': self.secret, 'name': self.name}
+
+    def enc_json(self, enc_func: TYPE.Callable[[str], str]) -> dict:
+        """Returns as open2fa server expected json payload format"""
+        return {'name': self.name, 'enc_secret': enc_func(self.secret)}

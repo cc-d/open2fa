@@ -255,29 +255,65 @@ class Open2FA:
             self.secrets_json_path, [s.json() for s in self.secrets]
         )
 
+    @property
+    def remote(self) -> TYPE.Union[RemoteSecret, None]:
+        """Shortcut for open2fa.o2fa_uuid.remote"""
+        return getattr(self.o2fa_uuid, 'remote', None)
+
     @logf()
-    def remote_push(self) -> TYPE.List[TOTPSecret]:
-        """Push the secrets to the remote server."""
+    def remote_push(
+        self,
+        name: TYPE.Optional[str] = None,
+        secret: TYPE.Optional[str] = None,
+        skip_confirm: bool = True,
+    ) -> TYPE.List[TOTPSecret]:
+        """Push the secrets to the remote server. If secret/name is provided,
+        only secrets with name/secrets containing the secret/name as
+        a substring will be pushed.
+        ?name (str]): Only push secrets containing this name.
+        ?secret (str): Only push secrets containing this secret.
+        @skip_confirm (bool): Skip the confirmation prompt.
+            Default: True
+        -> TOTPSecret[]: The new secrets pushed to the remote server.
+        """
         if getattr(self, 'o2fa_uuid', None) is None:
             raise EX.NoUUIDError()
 
-        remote = self.o2fa_uuid.remote
+        localsecs = list(self.secrets)
+        for a in [x for x in [name, secret] if x is not None]:
+            _log.debug(
+                'filtering local secrets %s without %s' % (localsecs, a)
+            )
+            localsecs = [s for s in localsecs if a in getattr(s, a)]
+
         uhash = self.o2fa_uuid.o2fa_id
+
         enc_secrets = [
-            {'enc_secret': remote.encrypt(s.secret), 'name': s.name}
-            for s in self.secrets
+            {'enc_secret': self.remote.encrypt(s.secret), 'name': s.name}
+            for s in localsecs
         ]
+
+        if not skip_confirm:
+            print(
+                'Pushing the following secrets to the remote server:\n',
+                json.dumps(enc_secrets, indent=2),
+            )
+            if input('Continue? (y/n): ').lower() != 'y':
+                return []
+
         r = apireq(
             'POST',
             'totps',
-            data={'totps': enc_secrets},
+            data={
+                'totps': [s.enc_json(self.remote.encrypt) for s in localsecs]
+            },
             headers={'X-User-Hash': uhash},
             api_url=self.o2fa_api_url,
         )
         new_secrets = []
         for sec in r.data['totps']:
             new_sec = TOTPSecret(
-                remote.decrypt(sec['enc_secret']), sec['name']
+                self.remote.decrypt(sec['enc_secret']), sec['name']
             )
             new_secrets.append(new_sec)
         return new_secrets
@@ -389,7 +425,7 @@ class Open2FA:
         return int(resp.data['deleted'])
 
     @logf()
-    def cli_info(self, show_secrets: bool) -> None:
+    def cli_info(self, show_secrets: bool, remote: bool = False) -> None:
         """Prints the Open2FA info."""
         o_dir = self.o2fa_dir
         o_api_url = self.o2fa_api_url or config.OPEN2FA_API_URL
@@ -403,14 +439,17 @@ class Open2FA:
             o_uuid_str = itrunc(self.o2fa_uuid.uuid)
             o_id = itrunc(self.o2fa_uuid.o2fa_id)
             o_secret = itrunc(self.o2fa_uuid.remote.b58)
+
+        margs = (o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret)
         msg = MSGS.INFO_STATUS
         if show_secrets is True:
             msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
-        print(
-            msg.format(
-                o_dir, o_api_url, o_num_secrets, o_uuid_str, o_id, o_secret
-            )
-        )
+
+        print(msg.format(*margs))
+        remote_secrets = self.remote_pull(no_save_remote=True)
+        print('Remote Secrets: %s' % len(remote_secrets))
+        for s in remote_secrets:
+            print(s.name, itrunc(s.secret))
 
     @logf()
     def remote_init(self) -> TYPE.Optional[O2FAUUID]:
