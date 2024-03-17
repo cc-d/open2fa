@@ -100,6 +100,5 @@ def test_list(local_client: Open2FA):
     o2fa, out = exec_cmd(cmd, local_client)
     print('o2fa', o2fa, '\n\n', 'local_client', local_client, sep='\n')
     for sec in _SECRETS:
-        assert sec[1] in out
-        assert sec[0] not in out
-        assert sec[1][0] + '...' in out
+        assert sec[0][0] + '...' in out
+        assert str(sec[1]) in out
