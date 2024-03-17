@@ -65,8 +65,9 @@ def randir():
 def local_client():
     """Fixture to create a TOTPSecret instance for testing."""
     o2fa = Open2FA(_DIR, None, _URL)
-    for sec in _SECRETS:
-        o2fa.add_secret(sec[0], sec[1])
+    if len(o2fa.secrets) == 0:
+        for sec in _SECRETS:
+            o2fa.add_secret(sec[0], sec[1])
     yield o2fa
 
 
@@ -94,7 +95,10 @@ def exec_cmd(cmd: list[str], client: Open2FA) -> tuple[Open2FA, str]:
         return o2fa.refresh(), mock_out.getvalue()
 
 
-def test_list(local_client: Open2FA):
+@pt.mark.parametrize(
+    'cmd', [['open2fa', 'list'], ['open2fa', 'list', '-s'], ['open2fa', 'l']]
+)
+def test_list_cmd(cmd: list[str], local_client: Open2FA):
     """Test the list command."""
     cmd = ['open2fa', 'list']
     o2fa, out = exec_cmd(cmd, local_client)
