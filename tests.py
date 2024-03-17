@@ -100,9 +100,11 @@ def exec_cmd(cmd: list[str], client: Open2FA) -> tuple[Open2FA, str]:
 )
 def test_list_cmd(cmd: list[str], local_client: Open2FA):
     """Test the list command."""
-    cmd = ['open2fa', 'list']
     o2fa, out = exec_cmd(cmd, local_client)
     print('o2fa', o2fa, '\n\n', 'local_client', local_client, sep='\n')
     for sec in _SECRETS:
-        assert sec[0][0] + '...' in out
+        if '-s' in cmd:
+            assert sec[0] in out
+        else:
+            assert sec[0][0] + '...' in out
         assert str(sec[1]) in out
