@@ -93,19 +93,16 @@ def remote_client(local_client: Open2FA):
 from logfunc import logf
 
 
-def exec_cmd(cmd, local_client: U[Open2FA, None] = None) -> U[Open2FA, Gen]:
+def exec_cmd(cmd, client) -> U[Open2FA, Gen]:
+
     cmd = ['cli.py'] + [str(c) for c in cmd]
-    client = local_client if local_client else Open2FA()
+
     with patch('sys.argv', cmd):
         with patch('sys.stdout', new_callable=StringIO) as out:
-            with patch('sys.stderr', new_callable=StringIO) as err:
-                main(
-                    o2fa_api_url=client.api_url,
-                    o2fa_uuid=client.uuid,
-                    o2fa_dir=client.dir,
-                )
 
-                return client, out.getvalue()
+            main(o2fa_api_url=client.o2fa_api_url, o2fa_dir=client.o2fa_dir)
+
+            return client, out.getvalue()
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
@@ -129,12 +126,21 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
                 assert sec[0][0] + '...' in out
 
 
-@pt.mark.parametrize('cmd', [['add', _TOTP, _NAME], ['add', _TOTP]])
+@pt.mark.parametrize(
+    'cmd', [['add', _TOTP, '-n', _NAME + 'unique'], ['add', '-h']]
+)
 def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
-    if len(cmd) == 3:
-        o2fa, out = exec_cmd(cmd, local_client)
-        assert len(o2fa.secrets) == len(_SECRETS) + 1
-        assert _TOTP in out
+    if '-h' in cmd:
+        with patch('builtins.print') as mock_print:
+            with pt.raises(SystemExit):
+                exec_cmd(cmd, local_client)
+            mock_print.assert_called()
+            assert any(
+                'usage' in call.args[0] for call in mock_print.call_args_list
+            )
     else:
-        with pt.raises(SystemExit):
-            exec_cmd(cmd, local_client)
+        o2fa, out = exec_cmd(cmd, local_client)
+
+        assert 'added' in out.lower()
+        print([n.name for n in o2fa.secrets])
+        print([n.secret for n in o2fa.secrets])

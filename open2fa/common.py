@@ -103,6 +103,9 @@ class O2FAUUID:
             self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '
         )
 
+    def __len__(self) -> int:
+        return len(self.uuid.bytes)
+
 
 class TOTPSecret:
     secret: str
