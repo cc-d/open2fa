@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock
 
 import os
 import os.path as osp
+
 from shutil import rmtree
 from typing import Union as U, Generator as Gen
 from uuid import UUID, uuid4
@@ -95,25 +96,34 @@ from logfunc import logf
 def exec_cmd(cmd, local_client: U[Open2FA, None] = None) -> U[Open2FA, Gen]:
     cmd = ['cli.py'] + [str(c) for c in cmd]
     client = local_client if local_client else Open2FA()
-    with patch('open2fa.cli_utils.parse_cli_arg_aliases') as mock_pargs:
-        mock_pargs.return_value = cmd
-        with patch('sys.argv', cmd):
-            with patch('sys.stdout', new_callable=StringIO) as out:
-                with patch('sys.stderr', new_callable=StringIO) as err:
-                    main(
-                        o2fa_api_url=client.api_url,
-                        o2fa_uuid=client.uuid,
-                        o2fa_dir=client.dir,
-                    )
+    with patch('sys.argv', cmd):
+        with patch('sys.stdout', new_callable=StringIO) as out:
+            with patch('sys.stderr', new_callable=StringIO) as err:
+                main(
+                    o2fa_api_url=client.api_url,
+                    o2fa_uuid=client.uuid,
+                    o2fa_dir=client.dir,
+                )
 
-                    return client, out.getvalue()
+                return client, out.getvalue()
 
 
-@pt.mark.parametrize('cmd', [['list'], ['list', '-s']])
-def test_list_cmd(cmd: list[str], local_client: Open2FA):
-    o2fa, out = exec_cmd(cmd, local_client=local_client)
-    for sec in _SECRETS:
-        if '-s' in cmd:
-            assert sec[0] in out
-        else:
-            assert sec[0] not in out
+@pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
+def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
+    if '-h' in cmd:
+        with patch('builtins.print') as mock_print:
+            with pt.raises(SystemExit):
+                exec_cmd(cmd, local_client)
+            mock_print.assert_called()
+            assert any(
+                'usage' in call.args[0] for call in mock_print.call_args_list
+            )
+    else:
+        o2fa, out = exec_cmd(cmd, local_client)
+        assert len(o2fa.secrets) == len(_SECRETS)
+        for sec in _SECRETS:
+            if '-s' in cmd:
+                assert sec[0] in out
+            else:
+                assert sec[0] not in out
+                assert sec[0][0] + '...' in out
