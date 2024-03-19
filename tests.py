@@ -127,3 +127,14 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
             else:
                 assert sec[0] not in out
                 assert sec[0][0] + '...' in out
+
+
+@pt.mark.parametrize('cmd', [['add', _TOTP, _NAME], ['add', _TOTP]])
+def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
+    if len(cmd) == 3:
+        o2fa, out = exec_cmd(cmd, local_client)
+        assert len(o2fa.secrets) == len(_SECRETS) + 1
+        assert _TOTP in out
+    else:
+        with pt.raises(SystemExit):
+            exec_cmd(cmd, local_client)
