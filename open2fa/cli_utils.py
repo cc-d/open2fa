@@ -91,11 +91,15 @@ def dash_arg(arg: str) -> TYPE.Set[str]:
 
 
 def parse_cli_arg_aliases(argv_args: TYPE.List[str]) -> TYPE.List[str]:
-    """turns cli arg aliases into their canonical form"""
-    non_empty_args = [arg.lower() for arg in argv_args if arg != '']
+    """Turns CLI arg aliases into their canonical form."""
+    # Ensure all arguments are strings and not empty
+    non_empty_args = [arg for arg in argv_args if arg and isinstance(arg, str)]
+
+    # If there are not enough arguments to process, return the original list
     if len(non_empty_args) < 2:
         return argv_args
 
+    # Initialize a map of command aliases
     alias_map = {
         'list': {'l', '-l'}.union(dash_arg('list')),
         'add': {'a', '-a'}.union(dash_arg('add')),
@@ -108,14 +112,16 @@ def parse_cli_arg_aliases(argv_args: TYPE.List[str]) -> TYPE.List[str]:
         .union(dash_arg('stat'))
         .union(dash_arg('status')),
     }
-    first_arg = argv_args[1].lower()
+
+    # Process the first argument
+    first_arg = str(non_empty_args[1]).lower()
     for cmd, aliases in alias_map.items():
         if first_arg in aliases:
             argv_args[1] = cmd
             break
 
     if len(argv_args) > 2:
-        second_arg = argv_args[2].lower()
+        second_arg = str(argv_args[2]).lower()
         use_alias_map = None
         if first_arg == 'remote':
             use_alias_map = {
