@@ -106,7 +106,7 @@ def exec_cmd(cmd, local_client: U[Open2FA, None] = None) -> U[Open2FA, Gen]:
                         o2fa_dir=client.dir,
                     )
 
-                    return client, out
+                    return client, out.getvalue()
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s']])
@@ -114,6 +114,6 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA):
     o2fa, out = exec_cmd(cmd, local_client=local_client)
     for sec in _SECRETS:
         if '-s' in cmd:
-            assert sec[0] in out.getvalue()
+            assert sec[0] in out
         else:
-            assert sec[0] not in out.getvalue()
+            assert sec[0] not in out
