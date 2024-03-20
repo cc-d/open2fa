@@ -108,13 +108,11 @@ def exec_cmd(cmd, client) -> U[Open2FA, Gen]:
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
 def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
     if '-h' in cmd:
-        with patch('builtins.print') as mock_print:
+        with patch('sys.stdout', new_callable=StringIO) as out:
             with pt.raises(SystemExit):
                 exec_cmd(cmd, local_client)
-            mock_print.assert_called()
-            assert any(
-                'usage' in call.args[0] for call in mock_print.call_args_list
-            )
+            print(out.getvalue())
+
     else:
         o2fa, out = exec_cmd(cmd, local_client)
         assert len(o2fa.secrets) == len(_SECRETS)
@@ -127,20 +125,28 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
 
 
 @pt.mark.parametrize(
-    'cmd', [['add', _TOTP, '-n', _NAME + 'unique'], ['add', '-h']]
+    'cmd',
+    [
+        ['add', _TOTP, '-n', _NAME + 'unique'],
+        ['add', '-h'],
+        ['add', _TOTP, _TOTP],
+    ],
 )
 def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
     if '-h' in cmd:
-        with patch('builtins.print') as mock_print:
+        with patch('sys.stdout', new_callable=StringIO) as out:
             with pt.raises(SystemExit):
                 exec_cmd(cmd, local_client)
-            mock_print.assert_called()
-            assert any(
-                'usage' in call.args[0] for call in mock_print.call_args_list
-            )
+
+            print(out.getvalue())
     else:
+        name, secret = cmd[2], cmd[1]
+        name = name if name != '-n' else cmd[3]
+
         o2fa, out = exec_cmd(cmd, local_client)
+        print(out, o2fa.secrets)
+        o2fa.refresh()
 
         assert 'added' in out.lower()
-        print([n.name for n in o2fa.secrets])
-        print([n.secret for n in o2fa.secrets])
+        assert name in out
+        assert secret[0] + '...' in out

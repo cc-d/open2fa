@@ -6,6 +6,7 @@ import typing as TYPE
 import time
 import sys
 import logging
+from binascii import Error as BinError
 from functools import wraps
 from pathlib import Path
 from signal import signal, SIGWINCH
@@ -79,23 +80,34 @@ class Open2FA:
         return self.o2fa_uuid
 
     @logf()
-    def add_secret(self, secret: str, name: str) -> TOTPSecret:
+    def add_secret(self, *args, **kwargs) -> TOTPSecret:
         """Add a new TOTP secret to the Open2FA object.
-        Args:
-            secret (str): the TOTP secret
-            name (str): the name of the secret
-        Returns:
-            TOTPSecret: the new TOTPSecret object
+        ~secret (str): the TOTP secret
+        ~name (str): the name of the secret
+        -> TOTPSecret: the new TOTPSecret object
         """
+        name, sec = kwargs.get('name'), kwargs.get('secret')
+        if sec is None:
+            try:
+                sec = args[0]
+                generate_totp_2fa_code(sec)
+            except BinError:
+                sec, name = args[1], args[0]
+        if name is None:
+            if len(args) <= 1:
+                pass
+            else:
+                name = args[0] if sec != args[0] else args[1]
+
         for s in self.secrets:
-            if s.name == name and s.secret == secret:
+            if s.name == name and s.secret == sec:
                 raise EX.SecretExistsError(
                     'Secret name={} secret={} already exists'.format(
-                        name, sec_trunc(secret)
+                        name, sec_trunc(sec)
                     )
                 )
 
-        new_secret = TOTPSecret(secret, name)
+        new_secret = TOTPSecret(sec, name)
         self.secrets.append(new_secret)
         self.write_secrets()
         return new_secret
@@ -108,13 +120,11 @@ class Open2FA:
         force: bool = False,
     ) -> int:
         """Remove a TOTP secret from the Open2FA object.
-        Args:
-            name (str, optional): the name of the secret to remove
-            sec (str, optional): the secret to remove
-            force (bool): whether to remove the secret without confirmation
-                Default: False
-        Returns:
-            int: the number of secrets removed
+        name (str, optional): the name of the secret to remove
+        sec (str, optional): the secret to remove
+        force (bool): whether to remove the secret without confirmation
+            Default: False
+        int: the number of secrets removed
         """
         new_secrets = []
         _seclen = len(self.secrets)
@@ -142,13 +152,11 @@ class Open2FA:
     @logf()
     def generate_codes(
         self, name: TYPE.Optional[str] = None
-    ) -> TYPE.Generator:
+    ) -> TYPE.Generator[TOTPSecret, None, None]:
         """Generate TOTP 2FA codes for a specific secret.
-        Args:
-            name (str, optional): the name of the secret to generate a code for
-                if excluded, codes for all secrets will be generated
-        Yields:
-            Generator[TOTPSecret, None, None]: the TOTPSecret object[s]
+        name (str, optional): the name of the secret to generate a code for
+            if excluded, codes for all secrets will be generated
+        YIELDS: Generator[TOTPSecret, None, None]: the TOTPSecret object[s]
         """
         for s in self.secrets:
             s.generate_code()
@@ -161,8 +169,7 @@ class Open2FA:
         name: TYPE.Optional[str] = None,
         delay: float = 0.5,
     ):
-        """
-        Live generate and display 2FA codes for the Open2FA object.
+        """Live generate and display 2FA codes for the Open2FA object.
         ~repeat (Optional[int]): Number of 2FA code generation iterations.
             Default: None (infinite).
         ~name (Optional[str]): Only generate for secrets matching this name.
@@ -177,8 +184,7 @@ class Open2FA:
         name: TYPE.Optional[str] = None,
         delay: float = 0.5,
     ):
-        """
-        Live generate and display 2FA codes for the Open2FA object.
+        """Live generate and display 2FA codes for the Open2FA object.
         ~repeat (Optional[int]): Number of 2FA code generation iterations.
         ~name (Optional[str]): Only generate for secrets matching this name.
         ~delay (float): Time between code generation iterations.
@@ -430,11 +436,10 @@ class Open2FA:
         name: TYPE.Optional[str] = None,
     ) -> int:
         """Delete the remote secrets.
-        Args:
-            secret (str, optional): the secret to delete
-            name (str, optional): the name of the secret to delete
-        Returns:
-            int: the number of secrets deleted
+
+        secret (str, optional): the secret to delete
+        name (str, optional): the name of the secret to delete
+        -> int: the number of secrets deleted
         """
         if self.o2fa_uuid is None:
             raise EX.NoUUIDError()
@@ -504,8 +509,7 @@ class Open2FA:
     @logf()
     def remote_init(self) -> TYPE.Optional[O2FAUUID]:
         """Handles initialization of remote capabilities of Open2FA instance
-        Returns:
-            O2FAUUID: the Open2FA UUID if newly created else None
+        -> O2FAUUID: the Open2FA UUID if newly created else None
         """
         uuid_file_path = os.path.join(self.o2fa_dir, 'open2fa.uuid')
 

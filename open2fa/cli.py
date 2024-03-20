@@ -76,9 +76,16 @@ def parse_args() -> argparse.ArgumentParser:
         aliases=['a'],
     )
     parser_add.add_argument(
-        'secret', type=str, help='The TOTP secret key', nargs='?'
+        'secret', type=str, help='The TOTP secret key', nargs='?', default=None
     )
     # Name as an optional argument
+    parser_add.add_argument(
+        'name_pos',
+        type=str,
+        help='Name of the secret',
+        nargs='?',
+        default=None,
+    )
     parser_add.add_argument(
         '--name', '-n', type=str, help='Name of the secret', dest='name'
     )
@@ -314,8 +321,8 @@ def main(
 
     elif cli_args.command == 'add':
         # empty add command
-        if cli_args.secret is None and cli_args.name is None:
-            cli_args.secret, cli_args.name = _add_no_name_secret()
+        if cli_args.name_pos is not None:
+            cli_args.name = cli_args.name_pos
 
         new_secret = Op2FA.add_secret(cli_args.secret, cli_args.name)
         print(
