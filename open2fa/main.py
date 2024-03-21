@@ -27,9 +27,37 @@ from .cli_utils import (
 )
 from .common import O2FAUUID, RemoteSecret, TOTPSecret
 from .totp import TOTP2FACode, generate_totp_2fa_code
-from .utils import ApiResponse, apireq, sec_trunc, input_confirm
+from .utils import (
+    ApiResponse,
+    apireq,
+    sec_trunc,
+    input_confirm,
+    valid_totp_secret as valid_sec,
+)
 
 _log = logging.getLogger(__name__)
+
+
+@logf()
+def _uinput() -> TYPE.Tuple[str, TYPE.Union[str, None]]:
+    """Get user input for the secret and name."""
+    secret = input('Enter the TOTP secret: ')
+    if not valid_sec(secret):
+        raise ValueError('Invalid User Input secret: %s' % secret)
+    name = input('Enter the name of the secret: ')
+    return secret, name
+
+
+@logf()
+def _add_secinput(*args) -> TYPE.Tuple[str, TYPE.Union[str, None]]:
+    """Parse the secret and name arguments."""
+    if len(args) == 0 or set(args[0:2]) == {None}:
+        return tuple(_uinput())
+    if valid_sec(args[0]):
+        return args[0], args[1] if len(args) > 1 else None
+    elif len(args) > 1 and valid_sec(args[1]):
+        return args[1], args[0]
+    raise ValueError('Invalid secret/name arguments: %s' % str(args))
 
 
 class Open2FA:
@@ -79,33 +107,14 @@ class Open2FA:
         self.o2fa_uuid = O2FAUUID(uuid)
         return self.o2fa_uuid
 
-    @logf()
-    def add_secret(self, *args, **kwargs) -> TOTPSecret:
+    @logf(max_str_len=50)
+    def add_secret(self, *args) -> TOTPSecret:
         """Add a new TOTP secret to the Open2FA object.
         ~secret (str): the TOTP secret
         ~name (str): the name of the secret
         -> TOTPSecret: the new TOTPSecret object
         """
-        name, sec = kwargs.get('name'), kwargs.get('secret')
-        if sec is None:
-            try:
-                sec = args[0]
-                generate_totp_2fa_code(sec)
-            except BinError:
-                sec, name = args[1], args[0]
-        if name is None:
-            if len(args) <= 1:
-                pass
-            else:
-                name = args[0] if sec != args[0] else args[1]
-
-        for s in self.secrets:
-            if s.name == name and s.secret == sec:
-                raise EX.SecretExistsError(
-                    'Secret name={} secret={} already exists'.format(
-                        name, sec_trunc(sec)
-                    )
-                )
+        sec, name = _add_secinput(*args)
 
         new_secret = TOTPSecret(sec, name)
         self.secrets.append(new_secret)

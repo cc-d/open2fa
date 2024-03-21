@@ -5,6 +5,7 @@ import requests as req
 from logfunc import logf
 from pyshared import truncstr, default_repr
 
+from .totp import generate_totp_2fa_code as gen_code
 from . import ex as EX
 from .config import OPEN2FA_API_URL, OPEN2FA_UUID
 
@@ -65,3 +66,14 @@ def apireq(
 def input_confirm(prompt: str) -> bool:
     """Prompt user for confirmation."""
     return input(prompt).lower().strip().startswith('y')
+
+
+def valid_totp_secret(secret: str) -> bool:
+    """Check if secret is valid TOTP secret."""
+    if isinstance(secret, str):
+        try:
+            gen_code(secret)
+            return True
+        except Exception:
+            pass
+    return False

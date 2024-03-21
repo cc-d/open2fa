@@ -24,28 +24,6 @@ logger = getLogger(__name__)
 logger.setLevel('INFO')
 
 
-def _add_no_name_secret() -> TYPE.Tuple[str, TYPE.Union[str, None]]:
-    """gets the secret/name from user input if add command without args"""
-    print()
-    secret, name, inp_sec = None, None, None
-    attempt, max_attempts = 0, 3
-    while secret is None:
-        try:
-            inp_sec = input(MSGS.ADD_SEC_PROMPT)
-            secret = TOTPSecret(inp_sec, None)
-        except Exception as e:
-            print(MSGS.ADD_INVALID_SECRET.format(inp_sec))
-            secret = None
-            attempt += 1
-            if attempt >= max_attempts:
-                print('Max attempts reached, exiting.')
-                sys.exit(1)
-
-    secret.name = input(MSGS.ADD_NAME_PROMPT)
-    secret.name = secret.name if secret.name else None
-    return secret.secret, secret.name
-
-
 @logf()
 def parse_args() -> argparse.ArgumentParser:
     """Parse command-line arguments.

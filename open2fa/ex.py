@@ -27,3 +27,8 @@ class DelNoNameSec(Exception):
 class DelNoNameSecFound(Exception):
     def __init__(self, message: str = 'No secret found for that name/secret'):
         super().__init__(message)
+
+
+class NoSecretError(ValueError):
+    def __init__(self, message: str = 'No secret provided'):
+        super().__init__(message)

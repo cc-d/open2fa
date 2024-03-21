@@ -8,8 +8,11 @@ import os.path as osp
 from shutil import rmtree
 from typing import Union as U, Generator as Gen
 from uuid import UUID, uuid4
+import base64 as _b64
+import secrets as _secs
+
 from open2fa.cli import Open2FA, main, sys
-from open2fa.main import apireq
+from open2fa.main import apireq, _uinput
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
 from open2fa import ex as EX
 from open2fa import msgs as MSGS
@@ -44,6 +47,12 @@ _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
 _ENC_SECRETS = [
     {'enc_secret': _OP2FA.encrypt(sec[0]), 'name': sec[1]} for sec in _SECRETS
 ]
+
+
+def _totp(length: int = 32) -> str:
+    """Generate a random base32-encoded TOTP secret of the specified length."""
+    random_bytes = _secs.token_bytes(length)
+    return _b64.b32encode(random_bytes).decode()
 
 
 @pt.fixture(scope='module')
@@ -90,9 +99,6 @@ def remote_client(local_client: Open2FA):
     yield local_client
 
 
-from logfunc import logf
-
-
 def exec_cmd(cmd, client) -> U[Open2FA, Gen]:
 
     cmd = ['cli.py'] + [str(c) for c in cmd]
@@ -127,26 +133,52 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
 @pt.mark.parametrize(
     'cmd',
     [
-        ['add', _TOTP, '-n', _NAME + 'unique'],
+        ['add', _totp(), '-n', 'unique_secret_dash_n'],
+        ['add', _totp(), 'unique_secret_no_dash_n'],
         ['add', '-h'],
-        ['add', _TOTP, _TOTP],
+        ['add', _totp(), _totp() + 'unique_secret_and_name_no_dashes'],
+        ['add', tuple()],
+        ['add', (_totp(),)],
+        ['add', (_TOTP, _NAME)],
     ],
 )
 def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
+    # no params
     if '-h' in cmd:
         with patch('sys.stdout', new_callable=StringIO) as out:
             with pt.raises(SystemExit):
                 exec_cmd(cmd, local_client)
-
             print(out.getvalue())
+            return
+
+    # empty add
+    elif cmd[0] == 'add' and len(cmd) >= 1 and isinstance(cmd[1], tuple):
+        with patch('open2fa.main._uinput') as mock_input:
+            mock_input.return_value = cmd[1]
+            with patch('sys.argv', ['cli.py', 'add']):
+                if len(cmd[1]) < 2:
+                    with pt.raises(ValueError):
+                        main(
+                            o2fa_api_url=local_client.o2fa_api_url,
+                            o2fa_dir=local_client.o2fa_dir,
+                        )
+                    return
+
+                main(
+                    o2fa_api_url=local_client.o2fa_api_url,
+                    o2fa_dir=local_client.o2fa_dir,
+                )
+                o2fa = Open2FA(
+                    o2fa_dir=local_client.o2fa_dir,
+                    o2fa_uuid=None,
+                    o2fa_api_url=local_client.o2fa_api_url,
+                )
+                assert o2fa._has_secret(
+                    cmd[1][0], None if len(cmd[1]) < 2 else cmd[1][1]
+                )
+                return
+
     else:
-        name, secret = cmd[2], cmd[1]
-        name = name if name != '-n' else cmd[3]
-
         o2fa, out = exec_cmd(cmd, local_client)
-        print(out, o2fa.secrets)
-        o2fa.refresh()
-
-        assert 'added' in out.lower()
-        assert name in out
-        assert secret[0] + '...' in out
+        assert cmd[1][0] + '...' in out
+        assert cmd[-1] in out
