@@ -164,15 +164,12 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
                         )
                     return
 
-                main(
+                o2fa = main(
                     o2fa_api_url=local_client.o2fa_api_url,
                     o2fa_dir=local_client.o2fa_dir,
+                    return_open2fa=True,
                 )
-                o2fa = Open2FA(
-                    o2fa_dir=local_client.o2fa_dir,
-                    o2fa_uuid=None,
-                    o2fa_api_url=local_client.o2fa_api_url,
-                )
+
                 assert o2fa._has_secret(
                     cmd[1][0], None if len(cmd[1]) < 2 else cmd[1][1]
                 )
