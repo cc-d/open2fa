@@ -55,13 +55,13 @@ def _totp(length: int = 32) -> str:
     return _b64.b32encode(random_bytes).decode()
 
 
-@pt.fixture(scope='module')
+@pt.fixture()
 def ranuuid():
     """Fixture to generate a random UUID for testing."""
     yield str(uuid4())
 
 
-@pt.fixture(scope='module')
+@pt.fixture()
 def randir():
     """Fixture to generate a random directory path for testing."""
     _tmpdir = '/tmp/' + ranstr(10)
@@ -70,14 +70,10 @@ def randir():
 
     yield _tmpdir
     if osp.exists(_tmpdir):
-
-        # delete the directory
-
-        # ensure it si deleted even if ti is not empty
         rmtree(_tmpdir, ignore_errors=True)
 
 
-@pt.fixture(scope='module')
+@pt.fixture()
 def local_client(ranuuid: str, randir: str):
     """Fixture to create a TOTPSecret instance for testing."""
     o2fa = Open2FA(
@@ -99,16 +95,21 @@ def remote_client(local_client: Open2FA):
     yield local_client
 
 
-def exec_cmd(cmd, client) -> U[Open2FA, Gen]:
-
+def exec_cmd(cmd: list, client: Open2FA) -> tuple[Open2FA, str]:
     cmd = ['cli.py'] + [str(c) for c in cmd]
 
-    with patch('sys.argv', cmd):
-        with patch('sys.stdout', new_callable=StringIO) as out:
+    with patch('sys.argv', cmd), patch(
+        'sys.stdout', new_callable=StringIO
+    ) as out:
 
-            main(o2fa_api_url=client.o2fa_api_url, o2fa_dir=client.o2fa_dir)
+        main(
+            o2fa_api_url=client.api_url,
+            o2fa_dir=client.o2fa_dir,
+            return_open2fa=True,
+            o2fa_uuid=client.uuid,
+        )
 
-            return client, out.getvalue()
+        return client, out.getvalue()
 
 
 def _handle_dash_h(cmd: list[str], client: Open2FA):
@@ -120,7 +121,7 @@ def _handle_dash_h(cmd: list[str], client: Open2FA):
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
-def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
+def test_list_cmd(cmd: list[str], local_client: Open2FA):
     if '-h' in cmd:
         _handle_dash_h(cmd, local_client)
     else:
@@ -158,23 +159,61 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA):
                 if len(cmd[1]) < 2:
                     with pt.raises(ValueError):
                         main(
-                            o2fa_api_url=local_client.o2fa_api_url,
-                            o2fa_dir=local_client.o2fa_dir,
+                            o2fa_api_url=local_client.api_url,
+                            o2fa_dir=local_client.dir,
                         )
                     return
-
                 o2fa = main(
-                    o2fa_api_url=local_client.o2fa_api_url,
-                    o2fa_dir=local_client.o2fa_dir,
+                    o2fa_api_url=local_client.api_url,
+                    o2fa_dir=local_client.dir,
                     return_open2fa=True,
                 )
-
-                assert o2fa._has_secret(
+                assert o2fa.has_secret(
                     cmd[1][0], None if len(cmd[1]) < 2 else cmd[1][1]
                 )
-                return
-
     else:
         o2fa, out = exec_cmd(cmd, local_client)
         assert cmd[1][0] + '...' in out
         assert cmd[-1] in out
+
+
+from open2fa.utils import input_confirm
+
+
+@pt.mark.parametrize(
+    'cmd, secret, confirm',
+    [
+        (['delete', '-s', _SECRETS[0][0]], _SECRETS[0], 'n'),
+        (['delete', '-s', _SECRETS[0][0]], _SECRETS[0], 'y'),
+        (['delete', '-n', _SECRETS[1][1]], _SECRETS[1], 'y'),
+        (['delete', '-h'], None, 'y'),
+        (['delete', '--name', _SECRETS[2][1]], _SECRETS[2], 'y'),
+        (['delete', '--secret', _SECRETS[3][0]], _SECRETS[3], 'y'),
+        (['delete', _SECRETS[4][0]], _SECRETS[4], 'y'),
+    ],
+)
+def test_delete_cmd(
+    cmd: list[str],
+    secret: tuple[str, str, str],
+    confirm: str,
+    local_client: Open2FA,
+):
+    if '-h' in cmd:
+        _handle_dash_h(cmd, local_client)
+    else:
+        # incorrect args should raise error
+        if not cmd[1].startswith('-'):
+            with pt.raises(SystemExit):
+                o2fa, out = exec_cmd(cmd, local_client)
+            return
+
+        with patch('builtins.input', return_value=confirm) as mock_input:
+            print('mock_input', mock_input, 'cmd', cmd)
+            o2fa, out = exec_cmd(cmd, local_client)
+        o2fa = o2fa.refresh()
+
+        if confirm == 'y':
+            assert o2fa.has_secret(secret[0], secret[1]) is False
+        else:
+            print(o2fa.secrets)
+            assert o2fa.has_secret(secret[0], secret[1])

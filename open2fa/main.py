@@ -96,11 +96,6 @@ class Open2FA:
             else config.OPEN2FA_API_URL
         )
 
-    @property
-    def fs_secret_json(self) -> TYPE.Tuple[str, TYPE.Union[TYPE.Dict, None]]:
-        """returns the secrets.json contents"""
-        return read_secrets_json(self.secrets_json_path) or None
-
     @logf()
     def set_uuid(self, uuid: str) -> O2FAUUID:
         """Set the Open2FA UUID attribute to O2FAUUID(uuid)"""
@@ -171,21 +166,6 @@ class Open2FA:
             s.generate_code()
             if name is None or str(s.name).find(name) != -1:
                 yield s
-
-    def display_codes(
-        self,
-        repeat: TYPE.Optional[int] = None,
-        name: TYPE.Optional[str] = None,
-        delay: float = 0.5,
-    ):
-        """Live generate and display 2FA codes for the Open2FA object.
-        ~repeat (Optional[int]): Number of 2FA code generation iterations.
-            Default: None (infinite).
-        ~name (Optional[str]): Only generate for secrets matching this name.
-            Default: None (all secrets).
-        ~delay (float): Time between code generation iterations.
-            Default: 0.5 seconds.
-        """
 
     def display_codes(
         self,
@@ -342,7 +322,7 @@ class Open2FA:
         return new_secrets
 
     @logf()
-    def _has_secret(self, secret: str, name: str) -> bool:
+    def has_secret(self, secret: str, name: str) -> bool:
         """Check if a secret exists in the Open2FA object."""
         for s in self.secrets:
             if s.secret == secret and s.name == name:
@@ -375,7 +355,7 @@ class Open2FA:
 
         # duplicate secrets are filtered out
         new_secs = [
-            s for s in pull_secrets if not self._has_secret(s.secret, s.name)
+            s for s in pull_secrets if not self.has_secret(s.secret, s.name)
         ]
 
         # Only return the secrets without saving, used in remote info
@@ -390,9 +370,8 @@ class Open2FA:
         return pull_secrets
 
     @property
-    @logf()
     def remote_secrets(self) -> TYPE.List[TOTPSecret]:
-        """Return the remote secrets."""
+        """Returns non-save self.remote_pull()"""
         return self.remote_pull(no_save_remote=True)
 
     @property
@@ -421,16 +400,16 @@ class Open2FA:
 
     @property
     def dir(self) -> str:
-        """Return the Open2FA directory."""
+        """abspath of self.o2fa_dir"""
         return str(osp.abspath(self.o2fa_dir))
 
     @property
     def api_url(self) -> TYPE.Union[str, None]:
-        """Return the Open2FA API URL."""
+        """shorthand for self.o2fa_api_url"""
         return self.o2fa_api_url
 
-    def refresh(self) -> TYPE.List[TOTPSecret]:
-        """Refresh the remote secrets object state."""
+    def refresh(self) -> 'Open2FA':
+        """Return most-recent new Open2FA object of the current instance."""
         # create new o2fa object with the same attributes
         return Open2FA(
             o2fa_dir=self.o2fa_dir,
@@ -509,11 +488,12 @@ class Open2FA:
         if show_secrets is True:
             msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
 
-        print(msg.format(*margs))
-        remote_secrets = self.remote_pull(no_save_remote=True)
-        print('Remote Secrets: %s' % len(remote_secrets))
-        for s in remote_secrets:
-            print(s.name, itrunc(s.secret))
+        if remote is True:
+            print(msg.format(*margs))
+            remote_secrets = self.remote_pull(no_save_remote=True)
+            print('Remote Secrets: %s' % len(remote_secrets))
+            for s in remote_secrets:
+                print(s.name, itrunc(s.secret))
 
     @logf()
     def remote_init(self) -> TYPE.Optional[O2FAUUID]:
