@@ -118,16 +118,11 @@ class Open2FA:
 
     @logf()
     def remove_secret(
-        self,
-        name: TYPE.Optional[str] = None,
-        sec: TYPE.Optional[str] = None,
-        force: bool = False,
+        self, name: TYPE.Optional[str] = None, sec: TYPE.Optional[str] = None
     ) -> int:
         """Remove a TOTP secret from the Open2FA object.
         name (str, optional): the name of the secret to remove
         sec (str, optional): the secret to remove
-        force (bool): whether to remove the secret without confirmation
-            Default: False
         int: the number of secrets removed
         """
         new_secrets = []
@@ -136,17 +131,15 @@ class Open2FA:
             remove = False
             str_name, str_secret = str(s.name), str(s.secret)
             if sec is not None:
-                if str_secret == sec:
-                    if force or input_confirm(
-                        MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
-                    ):
-                        remove = True
+                if str_secret == sec and input_confirm(
+                    MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
+                ):
+                    remove = True
             if name is not None:
-                if str_name == name:
-                    if force or input_confirm(
-                        MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
-                    ):
-                        remove = True
+                if str_name == name and input_confirm(
+                    MSGS.CONFIRM_REMOVE.format(str_name, str_secret)
+                ):
+                    remove = True
             if not remove:
                 new_secrets.append(s)
         self.secrets = new_secrets

@@ -102,7 +102,7 @@ def exec_cmd(cmd: list, client: Open2FA) -> tuple[Open2FA, str]:
         'sys.stdout', new_callable=StringIO
     ) as out:
 
-        main(
+        client = main(
             o2fa_api_url=client.api_url,
             o2fa_dir=client.o2fa_dir,
             return_open2fa=True,
@@ -177,9 +177,6 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA):
         assert cmd[-1] in out
 
 
-from open2fa.utils import input_confirm
-
-
 @pt.mark.parametrize(
     'cmd, secret, confirm',
     [
@@ -210,7 +207,6 @@ def test_delete_cmd(
         with patch('builtins.input', return_value=confirm) as mock_input:
             print('mock_input', mock_input, 'cmd', cmd)
             o2fa, out = exec_cmd(cmd, local_client)
-        o2fa = o2fa.refresh()
 
         if confirm == 'y':
             assert o2fa.has_secret(secret[0], secret[1]) is False
