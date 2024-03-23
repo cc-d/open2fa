@@ -1,5 +1,15 @@
 # Change Log
 
+## 1.3.0
+
+Completely refactored tests
+
+Added various properties to open2fa object to more easily access the uuid/directory/etc
+
+Added support for autodetecting name/secret from the add command without argument order being necessary (and tests for such)
+
+Ensured test dirs are deleted after tests are run
+
 ## 1.2.0
 
 Fixed a bug with remote list where the secrets were being saved due to re-use of the same remote pull method. Added regression tests for this.

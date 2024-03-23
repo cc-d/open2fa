@@ -44,10 +44,6 @@ _SECRETS = [
 # add encrypted secrets to _SECRETS
 _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
 
-_ENC_SECRETS = [
-    {'enc_secret': _OP2FA.encrypt(sec[0]), 'name': sec[1]} for sec in _SECRETS
-]
-
 
 def _totp(length: int = 32) -> str:
     """Generate a random base32-encoded TOTP secret of the specified length."""
@@ -65,12 +61,8 @@ def ranuuid():
 def randir():
     """Fixture to generate a random directory path for testing."""
     _tmpdir = '/tmp/' + ranstr(10)
-    if not osp.exists(_tmpdir):
-        os.mkdir(_tmpdir)
 
     yield _tmpdir
-    if osp.exists(_tmpdir):
-        rmtree(_tmpdir, ignore_errors=True)
 
 
 @pt.fixture()
@@ -83,16 +75,10 @@ def local_client(ranuuid: str, randir: str):
         if sec not in o2fa.secrets:
             o2fa.add_secret(sec[0], sec[1])
     yield o2fa
-
-
-@pt.fixture
-def remote_client(local_client: Open2FA):
-    """Fixture to create a RemoteSecret instance for testing."""
-    with patch('open2fa.main.apireq') as mock_apireq:
-        mock_apireq.return_value = _ENC_SECRETS
-        local_client.remote_pull()
-
-    yield local_client
+    if osp.exists(randir):
+        rmtree(randir, ignore_errors=True)
+    if osp.exists(_DIR):
+        rmtree(_DIR, ignore_errors=True)
 
 
 def exec_cmd(cmd: list, client: Open2FA) -> tuple[Open2FA, str]:
@@ -234,3 +220,42 @@ def test_generate_cmd(cmd: list[str], local_client: Open2FA):
         assert line.split()[0] in sec_names
         assert len(line.split()[1]) == 6
         assert float(line.split()[2]) > 0
+
+
+# remote command tests
+@pt.fixture
+def remote_client(randir: str):
+    client = Open2FA(o2fa_dir=randir, o2fa_uuid=None, o2fa_api_url=_URL)
+    with patch('sys.argv', ['cli.py', 'remote', 'init']):
+        o2fa = main(
+            o2fa_dir=client.o2fa_dir,
+            o2fa_api_url=client.api_url,
+            return_open2fa=True,
+        )
+    yield o2fa
+    if osp.exists(randir):
+        rmtree(randir, ignore_errors=True)
+
+
+@pt.fixture
+def rclient_w_secrets(remote_client: Open2FA):
+    _ENC_SECRETS = [
+        {'enc_secret': remote_client.encrypt(sec[0]), 'name': sec[1]}
+        for sec in _SECRETS
+    ]
+    with patch('open2fa.main.apireq') as mock_apireq:
+        mock_apireq.return_value = MagicMock(
+            status_code=200, data={'totps': _ENC_SECRETS}
+        )
+        remote_client.remote_pull()
+    yield remote_client
+
+
+def test_remote_init(remote_client: Open2FA):
+    assert remote_client.uuid is not None
+
+
+def test_remote_pull(rclient_w_secrets: Open2FA):
+    assert len(rclient_w_secrets.secrets) == len(_SECRETS)
+    for sec in _SECRETS:
+        assert rclient_w_secrets.has_secret(sec[0], sec[1])

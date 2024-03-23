@@ -74,6 +74,7 @@ class Open2FA:
         o2fa_dir: TYPE.Union[str, Path] = config.OPEN2FA_DIR,
         o2fa_uuid: TYPE.Optional[str] = None,
         o2fa_api_url: TYPE.Optional[str] = None,
+        **kwargs,
     ):
         """Create a new Open2FA object."""
         self.o2fa_dir = ensure_open2fa_dir(str(o2fa_dir))
