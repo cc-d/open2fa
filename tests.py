@@ -146,7 +146,7 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
         ['add', (_TOTP, _NAME)],
     ],
 )
-def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
+def test_add_cmd(cmd: list[str], local_client: Open2FA):
     # no params
     if '-h' in cmd:
         _handle_dash_h(cmd, local_client)
