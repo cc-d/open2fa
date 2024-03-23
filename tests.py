@@ -213,3 +213,24 @@ def test_delete_cmd(
         else:
             print(o2fa.secrets)
             assert o2fa.has_secret(secret[0], secret[1])
+
+
+@pt.mark.parametrize('cmd', [['g', '-h'], ['generate', '-r', '1']])
+def test_generate_cmd(cmd: list[str], local_client: Open2FA):
+    if '-h' in cmd:
+        _handle_dash_h(cmd, local_client)
+        return
+    o2fa, out = exec_cmd(cmd, local_client)
+    for head_cell in ['Name', 'Code', 'Next']:
+        assert head_cell in out
+    out = out.splitlines()
+    out = [l for l in out if l.find('---') == -1]
+    for head_cell in ['Name', 'Code', 'Next']:
+        assert head_cell in out[0]
+    out = out[1:]
+    sec_names = [str(sec[1]) for sec in _SECRETS]
+    for line in out:
+        assert len(line.split()) == 3
+        assert line.split()[0] in sec_names
+        assert len(line.split()[1]) == 6
+        assert float(line.split()[2]) > 0
