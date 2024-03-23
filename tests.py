@@ -111,14 +111,18 @@ def exec_cmd(cmd, client) -> U[Open2FA, Gen]:
             return client, out.getvalue()
 
 
+def _handle_dash_h(cmd: list[str], client: Open2FA):
+    with patch('sys.stdout', new_callable=StringIO) as out:
+        with pt.raises(SystemExit):
+            exec_cmd(cmd, client)
+            out = out.getvalue()
+            assert 'usage: ' in out
+
+
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
 def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
     if '-h' in cmd:
-        with patch('sys.stdout', new_callable=StringIO) as out:
-            with pt.raises(SystemExit):
-                exec_cmd(cmd, local_client)
-            print(out.getvalue())
-
+        _handle_dash_h(cmd, local_client)
     else:
         o2fa, out = exec_cmd(cmd, local_client)
         assert len(o2fa.secrets) == len(_SECRETS)
@@ -145,12 +149,7 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA, capsys):
 def test_add_cmd(cmd: list[str], local_client: Open2FA, capsys):
     # no params
     if '-h' in cmd:
-        with patch('sys.stdout', new_callable=StringIO) as out:
-            with pt.raises(SystemExit):
-                exec_cmd(cmd, local_client)
-            print(out.getvalue())
-            return
-
+        _handle_dash_h(cmd, local_client)
     # empty add
     elif cmd[0] == 'add' and len(cmd) >= 1 and isinstance(cmd[1], tuple):
         with patch('open2fa.main._uinput') as mock_input:
