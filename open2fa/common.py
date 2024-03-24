@@ -39,10 +39,8 @@ class RemoteSecret:
 
     def encrypt(self, plaintext: str) -> str:
         """Encrypt the plaintext using the secret and iv.
-        Args:
-            plaintext (str): the plaintext to encrypt
-        Returns:
-            str: the encrypted ciphertext
+        ~plaintext (str): the plaintext to encrypt
+        -> str: the encrypted ciphertext
         """
         cipher = Cipher(
             algorithms.AES(self.secret),
@@ -59,10 +57,8 @@ class RemoteSecret:
 
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt the ciphertext using the secret and iv.
-        Args:
-            ciphertext (str): the ciphertext to decrypt
-        Returns:
-            str: the decrypted plaintext
+        ~ciphertext (str): the ciphertext to decrypt
+        -> str: the decrypted plaintext
         """
         cipher = Cipher(
             algorithms.AES(self.secret),

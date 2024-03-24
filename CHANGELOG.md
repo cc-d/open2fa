@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.3.1
+
+added tests for terminal width/height auto-adjustment during generate
+
+improve generate + test performance by avoiding sleep on last iteration if -r is specified
+
 ## 1.3.0
 
 Completely refactored tests

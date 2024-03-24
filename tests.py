@@ -337,3 +337,31 @@ def test_remote_delete(rclient_w_secrets: Open2FA):
     assert mock_api_req_args[0] == 'DELETE'
     assert mock_api_req_args[1] == 'totps'
     assert mock_apireq.call_args[1]['data'] == {'totps': [_ENC_SECRETS[0]]}
+
+
+def test_autosize_generate_code(randir):
+    """Test the autosize_generate_code function."""
+    _WIDTHS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    _HEIGHTS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    o2fa = Open2FA(randir, None, 'http://example')
+    for i in [5, 20, 50, 100]:
+        o2fa.add_secret(_TOTP, 'a' * i)
+
+    def _autosize_generate_code(o2fa, **kwargs):
+        w, h = kwargs['w'], kwargs['h']
+        with patch(
+            'os.get_terminal_size', return_value=MagicMock(columns=w, lines=h)
+        ):
+            new_o2fa, out = exec_cmd(['g', '-r', '1'], o2fa)
+            out = out.lower()
+
+            for i, line in enumerate(out.splitlines()):
+                if line == '':
+                    continue
+                _s = {
+                    line.find(x) for x in ['not shown', '---', 'name', 'aaa']
+                }
+                assert len(_s) > 1
+
+    for w, h in zip(_WIDTHS, _HEIGHTS):
+        _autosize_generate_code(o2fa, w=w, h=h)

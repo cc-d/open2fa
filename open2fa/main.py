@@ -238,9 +238,10 @@ class Open2FA:
                 sys.stdout.flush()
                 prev_lines = len(buffer)
 
-                time.sleep(delay)
                 if repeat is not None:
                     repeat -= 1
+                if repeat != 0:
+                    time.sleep(delay)
 
         except KeyboardInterrupt:
             print("\nCancelled by user.")
