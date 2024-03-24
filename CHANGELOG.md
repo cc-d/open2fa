@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.3.2
+
+fixed bug with older python version typehints
+
 ## 1.3.1
 
 added tests for terminal width/height auto-adjustment during generate

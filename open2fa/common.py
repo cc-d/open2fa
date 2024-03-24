@@ -79,7 +79,7 @@ class O2FAUUID:
     o2fa_id: str
     remote: RemoteSecret
 
-    def __init__(self, uuid: UUID | str | bytes):
+    def __init__(self, uuid: TYPE.Union[str, UUID, bytes]):
         """Create a new O2FAUUID object."""
         # standardize the uuid input
         if isinstance(uuid, str):

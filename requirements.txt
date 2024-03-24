@@ -4,7 +4,7 @@ build
 cryptography<=41.0.7
 flake8
 isort
-logfunc<=2.1,>=1.9.1
+logfunc<=2.4.3
 pyshared<=1.2.0
 pytest
 pytest-cov
