@@ -248,7 +248,7 @@ def rclient_w_secrets(remote_client: Open2FA):
             status_code=200, data={'totps': _ENC_SECRETS}
         )
         remote_client.remote_pull()
-    yield remote_client
+        yield remote_client
 
 
 def test_remote_init(remote_client: Open2FA):
@@ -259,3 +259,81 @@ def test_remote_pull(rclient_w_secrets: Open2FA):
     assert len(rclient_w_secrets.secrets) == len(_SECRETS)
     for sec in _SECRETS:
         assert rclient_w_secrets.has_secret(sec[0], sec[1])
+
+
+@pt.mark.parametrize('dash_s', [True, False])
+def test_cli_info_cmd(rclient_w_secrets: Open2FA, dash_s: bool):
+    rclient = rclient_w_secrets
+    with patch('open2fa.main.print') as mock_print:
+        rclient.cli_info(dash_s)
+        calls = [c[0] for c in mock_print.call_args_list]
+    secs, secnames = [sec[0] for sec in _SECRETS], [sec[1] for sec in _SECRETS]
+    for sec in _SECRETS:
+        assert sec[0] in secs
+        assert sec[1] in secnames
+
+
+def test_remote_push(rclient_w_secrets: Open2FA):
+    with patch('open2fa.main.apireq') as mock_apireq:
+        with patch('sys.argv', ['cli.py', 'remote', 'push']):
+            rclient_w_secrets.remote_push()
+
+    assert mock_apireq.call_count == 1
+    mock_api_req_args = mock_apireq.call_args[0]
+    assert mock_api_req_args[0] == 'POST'
+    assert mock_api_req_args[1] == 'totps'
+    _ENC_SECRETS = [
+        {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
+        for sec in _SECRETS
+    ]
+    for sec in _ENC_SECRETS:
+        assert sec in mock_apireq.call_args[1]['data']['totps']
+
+
+@pt.mark.parametrize('cmd', [['remote', 'list'], ['remote', 'list', '-s']])
+def test_remote_list(rclient_w_secrets: Open2FA, cmd: list[str]):
+    _ENC_SECRETS = [
+        {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
+        for sec in _SECRETS
+    ]
+    with patch('sys.argv', ['cli.py'] + cmd):
+        with patch('open2fa.main.apireq') as mock_apireq:
+            mock_apireq.return_value = MagicMock(
+                status_code=200, data={'totps': _ENC_SECRETS}
+            )
+            with patch('builtins.print') as mock_print:
+                o2fa = main(
+                    o2fa_dir=rclient_w_secrets.dir,
+                    o2fa_api_url=rclient_w_secrets.api_url,
+                    o2fa_uuid=rclient_w_secrets.uuid,
+                    return_open2fa=True,
+                )
+            pcalls = [c[0] for c in mock_print.call_args_list]
+            pcalls = [p for p in pcalls if p and len(p) > 0]
+            pcalls = [p[0] for p in pcalls]
+            pcalls = ''.join(pcalls)
+            for sec in _SECRETS:
+                if '-s' in cmd:
+                    assert sec[0] in pcalls
+                else:
+                    assert sec[0] not in pcalls
+                    assert sec[0][0] + '...' in pcalls
+
+
+def test_remote_delete(rclient_w_secrets: Open2FA):
+    _ENC_SECRETS = [
+        {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
+        for sec in _SECRETS
+    ]
+    with patch('open2fa.main.apireq') as mock_apireq:
+        with patch(
+            'sys.argv', ['cli.py', 'remote', 'delete', '-s', _SECRETS[0][0]]
+        ):
+            rclient_w_secrets.remote_delete(
+                secret=_SECRETS[0][0], name=_SECRETS[0][1]
+            )
+    assert mock_apireq.call_count == 1
+    mock_api_req_args = mock_apireq.call_args[0]
+    assert mock_api_req_args[0] == 'DELETE'
+    assert mock_api_req_args[1] == 'totps'
+    assert mock_apireq.call_args[1]['data'] == {'totps': [_ENC_SECRETS[0]]}

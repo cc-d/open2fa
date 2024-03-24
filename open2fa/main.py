@@ -462,7 +462,7 @@ class Open2FA:
         return int(resp.data['deleted'])
 
     @logf()
-    def cli_info(self, show_secrets: bool, remote: bool = False) -> None:
+    def cli_info(self, show_secrets: bool) -> None:
         """Prints the Open2FA info."""
         o_dir = self.o2fa_dir
         o_api_url = self.o2fa_api_url or config.OPEN2FA_API_URL
@@ -482,8 +482,8 @@ class Open2FA:
         if show_secrets is True:
             msg = msg.replace(MSGS.INFO_SEC_TIP + '\n', '')
 
-        if remote is True:
-            print(msg.format(*margs))
+        print(msg.format(*margs))
+        if self.o2fa_uuid is not None:
             remote_secrets = self.remote_pull(no_save_remote=True)
             print('Remote Secrets: %s' % len(remote_secrets))
             for s in remote_secrets:

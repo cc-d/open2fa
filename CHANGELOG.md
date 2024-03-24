@@ -10,6 +10,10 @@ Added support for autodetecting name/secret from the add command without argumen
 
 Ensured test dirs are deleted after tests are run
 
+Ensured info command now returns remote info if remote capabilitites have been init
+
+Improved test coverage, up to 85% now
+
 ## 1.2.0
 
 Fixed a bug with remote list where the secrets were being saved due to re-use of the same remote pull method. Added regression tests for this.
