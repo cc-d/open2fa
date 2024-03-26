@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.3.4
+
+Updated Documentation
+
+## 1.3.3
+
+added -f flag to delete command to skip confirmation
+
 ## 1.3.2
 
 fixed bug with older python version typehints

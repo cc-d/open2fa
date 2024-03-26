@@ -173,6 +173,8 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA):
         (['delete', '--name', _SECRETS[2][1]], _SECRETS[2], 'y'),
         (['delete', '--secret', _SECRETS[3][0]], _SECRETS[3], 'y'),
         (['delete', _SECRETS[4][0]], _SECRETS[4], 'y'),
+        (['delete', _SECRETS[5][0]], _SECRETS[5], 'y'),
+        (['delete', '-s', _SECRETS[6][0], '-f'], _SECRETS[6], 'y'),
     ],
 )
 def test_delete_cmd(
@@ -193,6 +195,9 @@ def test_delete_cmd(
         with patch('builtins.input', return_value=confirm) as mock_input:
             print('mock_input', mock_input, 'cmd', cmd)
             o2fa, out = exec_cmd(cmd, local_client)
+
+        if '-f' in cmd:
+            assert mock_input.call_count == 0
 
         if confirm == 'y':
             assert o2fa.has_secret(secret[0], secret[1]) is False

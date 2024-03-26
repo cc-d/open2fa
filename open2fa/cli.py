@@ -88,7 +88,14 @@ def parse_args() -> argparse.ArgumentParser:
         help='Name of the secret to delete',
         dest='name',
     )
-
+    parser_delete.add_argument(
+        '--force',
+        '-f',
+        action='store_true',
+        help='Force delete without confirmation',
+        default=False,
+        dest='force',
+    )
     # Generate command
     parser_generate = subparsers.add_parser(
         'generate',
@@ -324,7 +331,9 @@ def main(
             return
         print(
             MSGS.DEL_SUCCESS.format(
-                Op2FA.remove_secret(cli_args.name, cli_args.secret)
+                Op2FA.remove_secret(
+                    cli_args.name, cli_args.secret, cli_args.force
+                )
             )
         )
 

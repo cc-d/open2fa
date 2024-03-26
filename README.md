@@ -60,14 +60,24 @@ You can see the full list of commands and options by running `open2fa -h` or `op
 
 There aere two different ways to add a TOTP secret. The first is to add a secret from args passed to the add command. The second is to simply run `open2fa add` and then enter the appropriate information when prompted.
 
+As of 1.3.4, the add command can now autodetect the name/secret from the input, by checking which input is a valid TOTP secret key. This means that input order is no longer important outside of the scenario that a valid TOTP secret is being used as a name for some reason.
+
 #### With args:
+
+1.3.4+
+
+```bash
+open2fa add I65VU7K5ZQL7WB4E abc123
+
+ADDED NEW SECRET: abc123 I...E
+```
+
+1.3.3 and below:
 
 ```bash
 open2fa add I65VU7K5ZQL7WB4E -n abc123
 
 ADDED NEW SECRET: abc123 I...E
-
-24 secrets total.
 ```
 
 #### Without args:
@@ -79,8 +89,6 @@ Enter TOTP secret: I65VU7K5ZQL7WB4E
 Enter name for secret: test15
 
 ADDED NEW SECRET: test15 I...E
-
-23 secrets total.
 ```
 
 ### Delete a TOTP Secret
@@ -142,7 +150,28 @@ TESTTESTTESTTESTTESTTEST2          919513    27.29
 
 Tokens will continue to be generated until the user exits the program with `Ctrl+C`.
 
-As of version 1.1.0, the `open2fa generate` command will automatically adjust the height/width of the generated codes to fit the terminal window.
+As of v1.1.0+, the `open2fa generate` command will automatically adjust the height/width of the generated codes to fit the terminal window.
+
+```bash
+open2fa g
+
+Name                   Code      Next
+-------------------    ------    -----
+abc123                 450939    0.81
+abc123                 450939    0.81
+DefaultSecret          450939    0.81
+DefaultSecretunique    450939    0.81
+irc                    771544    0.81
+irs2                   789798    0.81
+newtest                450939    0.81
+pypi                   771052    0.81
+test10                 450939    0.81
+test11                 450939    0.81
+test12                 450939    0.81
+test123                450939    0.81
+test15                 450939    0.81
+... [10] codes not shown ...
+```
 
 ### Show Open2FA Info/Status/Secrets
 
