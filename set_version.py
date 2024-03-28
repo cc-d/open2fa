@@ -30,4 +30,18 @@ def main(v: str):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    from open2fa.version import __version__ as _v
+
+    cv = str(_v)
+    v = _v.split('.')
+    print('Current version:', cv)
+    inp = input('Increment version Number (1,2,3): ')
+    if inp not in ('1', '2', '3'):
+        print('Invalid input')
+        sys.exit(1)
+
+    inp = int(inp) - 1
+    v[inp] = str(int(v[inp]) + 1)
+    v = '.'.join(v)
+    print('New version:', v)
+    main(v)
