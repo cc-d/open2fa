@@ -47,6 +47,15 @@ _SECRETS = [
 _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
 
 
+# def fixture_scope(scope: str = 'function') -> Call:
+#    """Decorator to set the scope of a fixture."""
+#
+#    def _wrapper(func: Call) -> Call:
+#        return pt.fixture(scope=scope)(func)
+#
+#    return _wrapper
+
+
 def scope_fixture(func: Call):
     g = globals()
     for sc in ['function', 'module', 'session']:
@@ -67,6 +76,7 @@ def _totp(length: int = 32) -> str:
 @scope_fixture
 def ranuuid():
     """Fixture to generate a random UUID for testing."""
+
     yield str(uuid4())
 
 
@@ -78,9 +88,10 @@ def randir():
     yield _tmpdir
 
 
-@scope_fixture
-def local_client(ranuuid: str, randir: str):
+@pt.fixture()
+def local_client(ranuuid_module: str, randir: str):
     """Fixture to create a TOTPSecret instance for testing."""
+    ranuuid = ranuuid_module
     o2fa = Open2FA(
         o2fa_dir=randir, o2fa_uuid=ranuuid, o2fa_api_url='http://test'
     )
