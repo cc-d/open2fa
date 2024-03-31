@@ -1,15 +1,17 @@
 import pytest as pt
 from io import StringIO
 from unittest.mock import patch, MagicMock
+from functools import wraps
 
 import os
 import os.path as osp
 
 from shutil import rmtree
-from typing import Union as U, Generator as Gen
+from typing import Union as U, Generator as Gen, Callable as Call, Any
 from uuid import UUID, uuid4
 import base64 as _b64
 import secrets as _secs
+
 
 from open2fa.cli import Open2FA, main, sys
 from open2fa.main import apireq, _uinput
@@ -45,19 +47,30 @@ _SECRETS = [
 _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
 
 
+def scope_fixture(func: Call):
+    g = globals()
+    for sc in ['function', 'module', 'session']:
+
+        decorated = pt.fixture(scope=sc)(func)
+        g[f'{func.__name__}_{sc}'] = decorated
+    func = g[f'{func.__name__}_function']
+    print('func', func)
+    return func
+
+
 def _totp(length: int = 32) -> str:
     """Generate a random base32-encoded TOTP secret of the specified length."""
     random_bytes = _secs.token_bytes(length)
     return _b64.b32encode(random_bytes).decode()
 
 
-@pt.fixture()
+@scope_fixture
 def ranuuid():
     """Fixture to generate a random UUID for testing."""
     yield str(uuid4())
 
 
-@pt.fixture()
+@scope_fixture
 def randir():
     """Fixture to generate a random directory path for testing."""
     _tmpdir = '/tmp/' + ranstr(10)
@@ -65,7 +78,7 @@ def randir():
     yield _tmpdir
 
 
-@pt.fixture()
+@scope_fixture
 def local_client(ranuuid: str, randir: str):
     """Fixture to create a TOTPSecret instance for testing."""
     o2fa = Open2FA(
@@ -193,7 +206,6 @@ def test_delete_cmd(
             return
 
         with patch('builtins.input', return_value=confirm) as mock_input:
-            print('mock_input', mock_input, 'cmd', cmd)
             o2fa, out = exec_cmd(cmd, local_client)
 
         if '-f' in cmd:
@@ -202,7 +214,6 @@ def test_delete_cmd(
         if confirm == 'y':
             assert o2fa.has_secret(secret[0], secret[1]) is False
         else:
-            print(o2fa.secrets)
             assert o2fa.has_secret(secret[0], secret[1])
 
 
