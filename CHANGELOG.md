@@ -1,6 +1,6 @@
 # Change Log
 
-## 1.3.4
+## 1.3.4 / 1.3.5
 
 Updated Documentation
 

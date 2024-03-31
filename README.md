@@ -60,11 +60,11 @@ You can see the full list of commands and options by running `open2fa -h` or `op
 
 There aere two different ways to add a TOTP secret. The first is to add a secret from args passed to the add command. The second is to simply run `open2fa add` and then enter the appropriate information when prompted.
 
-As of 1.3.4, the add command can now autodetect the name/secret from the input, by checking which input is a valid TOTP secret key. This means that input order is no longer important outside of the scenario that a valid TOTP secret is being used as a name for some reason.
+As of 1.3.0, the add command can now autodetect the name/secret from the input, by checking which input is a valid TOTP secret key. This means that input order is no longer important outside of the scenario that a valid TOTP secret is being used as a name for some reason.
 
 #### With args:
 
-1.3.4+
+v1.3.0+:
 
 ```bash
 open2fa add I65VU7K5ZQL7WB4E abc123
@@ -72,7 +72,7 @@ open2fa add I65VU7K5ZQL7WB4E abc123
 ADDED NEW SECRET: abc123 I...E
 ```
 
-1.3.3 and below:
+before 1.3.0:
 
 ```bash
 open2fa add I65VU7K5ZQL7WB4E -n abc123
