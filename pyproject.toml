@@ -40,7 +40,7 @@ dependencies = [
     "requests",
     "logfunc<=2.4.3",
     "cryptography<=41.0.7",
-    "pyshared<=1.2.0",
+    "pyshared<1.6",
     "base58==2.1.1",
 ]
 

@@ -63,7 +63,6 @@ def scope_fixture(func: Call):
         decorated = pt.fixture(scope=sc)(func)
         g[f'{func.__name__}_{sc}'] = decorated
     func = g[f'{func.__name__}_function']
-    print('func', func)
     return func
 
 

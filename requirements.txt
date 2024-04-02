@@ -5,7 +5,7 @@ cryptography<=41.0.7
 flake8
 isort
 logfunc<=2.4.3
-pyshared<=1.2.0
+pyshared<1.6
 pytest
 pytest-cov
 pytest-mock
