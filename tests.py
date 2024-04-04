@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 import base64 as _b64
 import secrets as _secs
 
-
+from pyshared import multiscope_fixture as scope_fixture
 from open2fa.cli import Open2FA, main, sys
 from open2fa.main import apireq, _uinput
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
@@ -45,15 +45,6 @@ _SECRETS = [
 ]
 # add encrypted secrets to _SECRETS
 _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
-
-
-# def fixture_scope(scope: str = 'function') -> Call:
-#    """Decorator to set the scope of a fixture."""
-#
-#    def _wrapper(func: Call) -> Call:
-#        return pt.fixture(scope=scope)(func)
-#
-#    return _wrapper
 
 
 def scope_fixture(func: Call):
