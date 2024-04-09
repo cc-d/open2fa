@@ -351,8 +351,8 @@ def test_autosize_generate_code(randir):
     for i in [5, 20, 50, 100]:
         o2fa.add_secret(_TOTP, 'a' * i)
 
-    def _autosize_generate_code(o2fa, **kwargs):
-        w, h = kwargs['w'], kwargs['h']
+    for w, h in zip(_WIDTHS, _HEIGHTS):
+
         with patch(
             'os.get_terminal_size', return_value=MagicMock(columns=w, lines=h)
         ):
@@ -363,6 +363,3 @@ def test_autosize_generate_code(randir):
                     continue
                 s = {line.find(x) for x in ['not shown', '---', 'name', 'aaa']}
                 assert len(s) > 1
-
-    for w, h in zip(_WIDTHS, _HEIGHTS):
-        _autosize_generate_code(o2fa, w=w, h=h)
