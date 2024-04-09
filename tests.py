@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 import base64 as _b64
 import secrets as _secs
 
-from pyshared import multiscope_fixture as scope_fixture
+from pyshared import multiscope_fixture as scope_fixture, ranstr
 from open2fa.cli import Open2FA, main, sys
 from open2fa.main import apireq, _uinput
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
@@ -21,8 +21,6 @@ from open2fa import msgs as MSGS
 from open2fa.version import __version__
 from open2fa.cli_utils import parse_cli_arg_aliases as pargs
 
-# Assuming ranstr function exists for generating random strings
-from pyshared import ranstr
 
 _TOTP, _NAME, _URL, _DIR, _UUID = (
     'I65VU7K5ZQL7WB4E',
@@ -47,16 +45,6 @@ _SECRETS = [
 _SECRETS = [(sec[0], sec[1], _OP2FA.encrypt(sec[0])) for sec in _SECRETS]
 
 
-def scope_fixture(func: Call):
-    g = globals()
-    for sc in ['function', 'module', 'session']:
-
-        decorated = pt.fixture(scope=sc)(func)
-        g[f'{func.__name__}_{sc}'] = decorated
-    func = g[f'{func.__name__}_function']
-    return func
-
-
 def _totp(length: int = 32) -> str:
     """Generate a random base32-encoded TOTP secret of the specified length."""
     random_bytes = _secs.token_bytes(length)
@@ -65,74 +53,69 @@ def _totp(length: int = 32) -> str:
 
 @scope_fixture
 def ranuuid():
-    """Fixture to generate a random UUID for testing."""
-
     yield str(uuid4())
 
 
 @scope_fixture
 def randir():
-    """Fixture to generate a random directory path for testing."""
     _tmpdir = '/tmp/' + ranstr(10)
-
     yield _tmpdir
 
 
 @pt.fixture()
 def local_client(ranuuid_module: str, randir: str):
     """Fixture to create a TOTPSecret instance for testing."""
-    ranuuid = ranuuid_module
+    _uuid = ranuuid_module
     o2fa = Open2FA(
-        o2fa_dir=randir, o2fa_uuid=ranuuid, o2fa_api_url='http://test'
+        o2fa_dir=randir, o2fa_uuid=_uuid, o2fa_api_url='http://test'
     )
     for sec in _SECRETS:
         if sec not in o2fa.secrets:
             o2fa.add_secret(sec[0], sec[1])
     yield o2fa
-    if osp.exists(randir):
-        rmtree(randir, ignore_errors=True)
-    if osp.exists(_DIR):
-        rmtree(_DIR, ignore_errors=True)
+    [
+        rmtree(x, ignore_errors=True)
+        for x in [randir, _DIR]
+        if os.path.exists(x)
+    ]
 
 
 def exec_cmd(cmd: list, client: Open2FA) -> tuple[Open2FA, str]:
     cmd = ['cli.py'] + [str(c) for c in cmd]
-
     with patch('sys.argv', cmd), patch(
         'sys.stdout', new_callable=StringIO
     ) as out:
-
         client = main(
-            o2fa_api_url=client.api_url,
-            o2fa_dir=client.o2fa_dir,
-            return_open2fa=True,
-            o2fa_uuid=client.uuid,
+            **{
+                'o2fa_api_url': client.api_url,
+                'o2fa_dir': client.dir,
+                'return_open2fa': True,
+                'o2fa_uuid': client.uuid,
+            }
         )
-
         return client, out.getvalue()
 
 
 def _handle_dash_h(cmd: list[str], client: Open2FA):
-    with patch('sys.stdout', new_callable=StringIO) as out:
-        with pt.raises(SystemExit):
-            exec_cmd(cmd, client)
-            out = out.getvalue()
-            assert 'usage: ' in out
+    with patch('sys.stdout', new_callable=StringIO) as out, pt.raises(
+        SystemExit
+    ):
+        exec_cmd(cmd, client)
+        assert 'usage: ' in out.getvalue().lower()
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
 def test_list_cmd(cmd: list[str], local_client: Open2FA):
     if '-h' in cmd:
-        _handle_dash_h(cmd, local_client)
-    else:
-        o2fa, out = exec_cmd(cmd, local_client)
-        assert len(o2fa.secrets) == len(_SECRETS)
-        for sec in _SECRETS:
-            if '-s' in cmd:
-                assert sec[0] in out
-            else:
-                assert sec[0] not in out
-                assert sec[0][0] + '...' in out
+        return _handle_dash_h(cmd, local_client)
+    o2fa, out = exec_cmd(cmd, local_client)
+    assert len(o2fa.secrets) == len(_SECRETS)
+    for sec in _SECRETS:
+        if '-s' in cmd:
+            assert sec[0] in out
+        else:
+            assert sec[0] not in out
+            assert sec[0][0] + '...' in out
 
 
 @pt.mark.parametrize(
@@ -150,9 +133,9 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA):
 def test_add_cmd(cmd: list[str], local_client: Open2FA):
     # no params
     if '-h' in cmd:
-        _handle_dash_h(cmd, local_client)
+        return _handle_dash_h(cmd, local_client)
     # empty add
-    elif cmd[0] == 'add' and len(cmd) >= 1 and isinstance(cmd[1], tuple):
+    if cmd[0] == 'add' and len(cmd) >= 1 and isinstance(cmd[1], tuple):
         with patch('open2fa.main._uinput') as mock_input:
             mock_input.return_value = cmd[1]
             with patch('sys.argv', ['cli.py', 'add']):
@@ -171,10 +154,10 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA):
                 assert o2fa.has_secret(
                     cmd[1][0], None if len(cmd[1]) < 2 else cmd[1][1]
                 )
-    else:
-        o2fa, out = exec_cmd(cmd, local_client)
-        assert cmd[1][0] + '...' in out
-        assert cmd[-1] in out
+        return
+    o2fa, out = exec_cmd(cmd, local_client)
+    assert cmd[1][0] + '...' in out
+    assert cmd[-1] in out
 
 
 @pt.mark.parametrize(
@@ -198,31 +181,27 @@ def test_delete_cmd(
     local_client: Open2FA,
 ):
     if '-h' in cmd:
-        _handle_dash_h(cmd, local_client)
-    else:
-        # incorrect args should raise error
-        if not cmd[1].startswith('-'):
-            with pt.raises(SystemExit):
-                o2fa, out = exec_cmd(cmd, local_client)
-            return
+        return _handle_dash_h(cmd, local_client)
 
-        with patch('builtins.input', return_value=confirm) as mock_input:
+    # incorrect args should raise error
+    if not cmd[1].startswith('-'):
+        with pt.raises(SystemExit):
             o2fa, out = exec_cmd(cmd, local_client)
-
-        if '-f' in cmd:
-            assert mock_input.call_count == 0
-
-        if confirm == 'y':
-            assert o2fa.has_secret(secret[0], secret[1]) is False
-        else:
-            assert o2fa.has_secret(secret[0], secret[1])
+        return
+    with patch('builtins.input', return_value=confirm) as mock_input:
+        o2fa, out = exec_cmd(cmd, local_client)
+    if '-f' in cmd:
+        assert mock_input.call_count == 0
+    if confirm == 'y':
+        assert o2fa.has_secret(secret[0], secret[1]) is False
+    else:
+        assert o2fa.has_secret(secret[0], secret[1])
 
 
 @pt.mark.parametrize('cmd', [['g', '-h'], ['generate', '-r', '1']])
 def test_generate_cmd(cmd: list[str], local_client: Open2FA):
     if '-h' in cmd:
-        _handle_dash_h(cmd, local_client)
-        return
+        return _handle_dash_h(cmd, local_client)
     o2fa, out = exec_cmd(cmd, local_client)
     for head_cell in ['Name', 'Code', 'Next']:
         assert head_cell in out
@@ -245,9 +224,11 @@ def remote_client(randir: str):
     client = Open2FA(o2fa_dir=randir, o2fa_uuid=None, o2fa_api_url=_URL)
     with patch('sys.argv', ['cli.py', 'remote', 'init']):
         o2fa = main(
-            o2fa_dir=client.o2fa_dir,
-            o2fa_api_url=client.api_url,
-            return_open2fa=True,
+            **{
+                'o2fa_dir': client.dir,
+                'o2fa_api_url': client.api_url,
+                'return_open2fa': True,
+            }
         )
     yield o2fa
     if osp.exists(randir):
@@ -256,13 +237,18 @@ def remote_client(randir: str):
 
 @pt.fixture
 def rclient_w_secrets(remote_client: Open2FA):
-    _ENC_SECRETS = [
-        {'enc_secret': remote_client.encrypt(sec[0]), 'name': sec[1]}
-        for sec in _SECRETS
-    ]
     with patch('open2fa.main.apireq') as mock_apireq:
         mock_apireq.return_value = MagicMock(
-            status_code=200, data={'totps': _ENC_SECRETS}
+            status_code=200,
+            data={
+                'totps': [
+                    {
+                        'enc_secret': remote_client.encrypt(sec[0]),
+                        'name': sec[1],
+                    }
+                    for sec in _SECRETS
+                ]
+            },
         )
         remote_client.remote_pull()
         yield remote_client
@@ -283,7 +269,7 @@ def test_cli_info_cmd(rclient_w_secrets: Open2FA, dash_s: bool):
     rclient = rclient_w_secrets
     with patch('open2fa.main.print') as mock_print:
         rclient.cli_info(dash_s)
-        calls = [c[0] for c in mock_print.call_args_list]
+
     secs, secnames = [sec[0] for sec in _SECRETS], [sec[1] for sec in _SECRETS]
     for sec in _SECRETS:
         assert sec[0] in secs
@@ -291,14 +277,14 @@ def test_cli_info_cmd(rclient_w_secrets: Open2FA, dash_s: bool):
 
 
 def test_remote_push(rclient_w_secrets: Open2FA):
-    with patch('open2fa.main.apireq') as mock_apireq:
-        with patch('sys.argv', ['cli.py', 'remote', 'push']):
-            rclient_w_secrets.remote_push()
+    with patch('open2fa.main.apireq') as mock_apireq, patch(
+        'sys.argv', ['cli.py', 'remote', 'push']
+    ):
+        rclient_w_secrets.remote_push()
 
     assert mock_apireq.call_count == 1
-    mock_api_req_args = mock_apireq.call_args[0]
-    assert mock_api_req_args[0] == 'POST'
-    assert mock_api_req_args[1] == 'totps'
+    mock_args = mock_apireq.call_args[0]
+    assert mock_args[0:2] == ('POST', 'totps')
     _ENC_SECRETS = [
         {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
         for sec in _SECRETS
@@ -313,28 +299,29 @@ def test_remote_list(rclient_w_secrets: Open2FA, cmd: list[str]):
         {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
         for sec in _SECRETS
     ]
-    with patch('sys.argv', ['cli.py'] + cmd):
-        with patch('open2fa.main.apireq') as mock_apireq:
-            mock_apireq.return_value = MagicMock(
-                status_code=200, data={'totps': _ENC_SECRETS}
+    with patch('sys.argv', ['cli.py'] + cmd), patch(
+        'open2fa.main.apireq'
+    ) as mock_apireq:
+        mock_apireq.return_value = MagicMock(
+            status_code=200, data={'totps': _ENC_SECRETS}
+        )
+        with patch('builtins.print') as mock_print:
+            main(
+                o2fa_dir=rclient_w_secrets.dir,
+                o2fa_api_url=rclient_w_secrets.api_url,
+                o2fa_uuid=rclient_w_secrets.uuid,
+                return_open2fa=True,
             )
-            with patch('builtins.print') as mock_print:
-                o2fa = main(
-                    o2fa_dir=rclient_w_secrets.dir,
-                    o2fa_api_url=rclient_w_secrets.api_url,
-                    o2fa_uuid=rclient_w_secrets.uuid,
-                    return_open2fa=True,
-                )
-            pcalls = [c[0] for c in mock_print.call_args_list]
-            pcalls = [p for p in pcalls if p and len(p) > 0]
-            pcalls = [p[0] for p in pcalls]
-            pcalls = ''.join(pcalls)
-            for sec in _SECRETS:
-                if '-s' in cmd:
-                    assert sec[0] in pcalls
-                else:
-                    assert sec[0] not in pcalls
-                    assert sec[0][0] + '...' in pcalls
+        pcalls = [c[0] for c in mock_print.call_args_list]
+        pcalls = [p for p in pcalls if p and len(p) > 0]
+        pcalls = [p[0] for p in pcalls]
+        pcalls = ''.join(pcalls)
+        for sec in _SECRETS:
+            if '-s' in cmd:
+                assert sec[0] in pcalls
+            else:
+                assert sec[0] not in pcalls
+                assert sec[0][0] + '...' in pcalls
 
 
 def test_remote_delete(rclient_w_secrets: Open2FA):
@@ -369,16 +356,13 @@ def test_autosize_generate_code(randir):
         with patch(
             'os.get_terminal_size', return_value=MagicMock(columns=w, lines=h)
         ):
-            new_o2fa, out = exec_cmd(['g', '-r', '1'], o2fa)
-            out = out.lower()
+            _, out = exec_cmd(['g', '-r', '1'], o2fa)
 
-            for i, line in enumerate(out.splitlines()):
+            for line in out.lower().splitlines():
                 if line == '':
                     continue
-                _s = {
-                    line.find(x) for x in ['not shown', '---', 'name', 'aaa']
-                }
-                assert len(_s) > 1
+                s = {line.find(x) for x in ['not shown', '---', 'name', 'aaa']}
+                assert len(s) > 1
 
     for w, h in zip(_WIDTHS, _HEIGHTS):
         _autosize_generate_code(o2fa, w=w, h=h)
