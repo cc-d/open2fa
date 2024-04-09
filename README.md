@@ -233,7 +233,7 @@ In this example:
 
 ## Remote Commands
 
-Push TOTP Secrets to the remote server\*\*:
+### Push TOTP Secrets to the remote server:
 
 ```bash
 open2fa remote push
