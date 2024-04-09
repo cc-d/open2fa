@@ -66,6 +66,7 @@ dev = [
     "flake8",
     "twine",
     "build",
+    "pyshared<1.6",
 ]
 
 
