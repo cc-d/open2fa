@@ -367,7 +367,7 @@ def test_autosize_generate_code(randir):
 
 
 def test_code_generated_differs(local_client: Open2FA):
-    """Test that the code generated is different from the previous code."""
+    """Test to ensure codes are only returned if they differ."""
     s = local_client.secrets[0]
     with patch('open2fa.common.generate_totp_2fa_code') as mock_gen:
         mock_gen.side_effect = [
