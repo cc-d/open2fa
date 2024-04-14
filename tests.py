@@ -383,3 +383,8 @@ def test_code_generated_differs(local_client: Open2FA):
 def test_parse_cliargs_less_2_args():
     """Test that parse_cli_arg_aliases returns the original list if less than 2 args."""
     assert pargs(['t']) == ['t']
+
+
+def test_refresh_code(local_client: Open2FA):
+    """Test the refresh_code method."""
+    assert id(local_client.refresh()) != id(local_client)

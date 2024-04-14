@@ -412,11 +412,12 @@ class Open2FA:
     def refresh(self) -> 'Open2FA':
         """Return most-recent new Open2FA object of the current instance."""
         # create new o2fa object with the same attributes
-        return Open2FA(
+        self = Open2FA(
             o2fa_dir=self.o2fa_dir,
             o2fa_uuid=self.uuid,
             o2fa_api_url=self.api_url,
         )
+        return self
 
     @logf()
     def remote_delete(
