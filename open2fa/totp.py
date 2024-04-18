@@ -27,13 +27,10 @@ class TOTP2FACode:
 def generate_totp_2fa_code(
     secret: str, interval_length: int = 30
 ) -> TOTP2FACode:
-    """
-    Generate a TOTP token using the provided secret key.
-    Args:
-        secret (str): The base32 encoded secret key.
-        interval_length (int): The time step in seconds. Default is 30 seconds.
-    Returns:
-        A TOTP2FACode object with the generated code as well as other info
+    """Generate a TOTP token using the provided secret key.
+    ~secret (str): The base32 encoded secret key.
+    ~interval_length (int): The time step in seconds. Default is 30 seconds.
+    -> TOTP2FACode: the generated code object as well as other info
     """
 
     # Decode the base32 encoded secret key. Casefold=True allows for
