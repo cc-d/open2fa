@@ -19,7 +19,7 @@ target-version = ['py37']
 
 [project]
 name = "open2fa"
-version = "1.3.7"
+version = "1.3.8"
 authors = [
   { name="Cary Carter", email="ccarterdev@gmail.com" },
 ]
@@ -40,7 +40,7 @@ dependencies = [
     "requests",
     "logfunc<=2.4.3",
     "cryptography<=41.0.7",
-    "pyshared>=1.5",
+    "pyshared>=1.1",
     "base58==2.1.1",
 ]
 
@@ -66,7 +66,7 @@ dev = [
     "flake8",
     "twine",
     "build",
-    "pyshared>=1.5",
+    "pyshared",
 ]
 
 

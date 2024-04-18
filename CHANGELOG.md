@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.3.8
+
+broadened the dependency range for pyshared dependency to prevent possible resolver warnings/issues
+
+## 1.3.7
+
+specified >= dependency range vs <=
+
 ## 1.3.6
 
 Updated pyshared dependency to use new default_repr
