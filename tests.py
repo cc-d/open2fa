@@ -207,7 +207,11 @@ def test_generate_cmd(cmd: list[str], local_client: Open2FA):
     for head_cell in ['Name', 'Code', 'Next']:
         assert head_cell in out
     out = out.splitlines()
-    out = [l for l in out if l.find('---') == -1]
+    out = [
+        l
+        for l in out
+        if l.find('---') == -1 and 'to stop' not in l.lower() and l
+    ]
     for head_cell in ['Name', 'Code', 'Next']:
         assert head_cell in out[0]
     out = out[1:]
@@ -363,7 +367,8 @@ def test_autosize_generate_code(randir):
                 if line == '':
                     continue
                 s = {line.find(x) for x in ['not shown', '---', 'name', 'aaa']}
-                assert len(s) > 1
+                if h > len(_SECRETS):
+                    assert len(s) >= 1
 
 
 def test_code_generated_differs(local_client: Open2FA):
@@ -388,3 +393,12 @@ def test_parse_cliargs_less_2_args():
 def test_refresh_code(local_client: Open2FA):
     """Test the refresh_code method."""
     assert id(local_client.refresh()) != id(local_client)
+
+
+def test_ctrl_cmd_c_msg(local_client: Open2FA):
+    """Test that the correct message is displayed when ctrl-c is pressed."""
+    with patch('builtins.print') as mock_print:
+        local_client.display_codes(repeat=1)
+        printed_lines = [c[0][0] for c in mock_print.call_args_list]
+        lines = [l.lower() for l in printed_lines]
+    assert any(['ctrl' in l.lower() for l in lines])

@@ -185,6 +185,7 @@ class Open2FA:
             if name is not None:
                 name_pool = [n for n in name_pool if n.find(name) != -1]
             MAXH = 0
+            print('\n(Press Ctrl+C to stop [Cmd+C on macOS])\n')
             while repeat is None or repeat > 0:
                 tsize = get_terminal_size()
                 TW, TH = tsize.columns, tsize.lines
