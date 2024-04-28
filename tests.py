@@ -210,7 +210,7 @@ def test_generate_cmd(cmd: list[str], local_client: Open2FA):
     out = [
         l
         for l in out
-        if l.find('---') == -1 and 'to stop' not in l.lower() and l
+        if l.find('---') == -1 and 'ctrl+c' not in l.lower() and l
     ]
     for head_cell in ['Name', 'Code', 'Next']:
         assert head_cell in out[0]

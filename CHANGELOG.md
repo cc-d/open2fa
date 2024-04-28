@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.0
+
+Added Ctrl+C hint, improved tests, added tests, and improved exit msg
+
 ## 1.3.8
 
 broadened the dependency range for pyshared dependency to prevent possible resolver warnings/issues

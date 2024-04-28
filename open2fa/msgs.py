@@ -56,3 +56,6 @@ ADD_SEC_PROMPT = 'Enter TOTP secret: '
 ADD_NAME_PROMPT = 'Enter name for secret: '
 ADD_INVALID_SECRET = 'Invalid TOTP secret: {} enter a valid secret.'
 ADD_SEC_NAME = '\nAdded TOTP secret: {} with name {}\n'
+
+CTRL_C = 'Press Ctrl+C to exit... '
+SIGINT_MSG = '(SIGINT) Exiting...'
