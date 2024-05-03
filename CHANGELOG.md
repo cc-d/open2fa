@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.1
+
+Fixed pyshared dependency range causing issue if certain versions of pyshared were installed without pytest
+
 ## 1.4.0
 
 Added Ctrl+C hint, improved tests, added tests, and improved exit msg
