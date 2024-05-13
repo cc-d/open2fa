@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.2
+
+Changed both logfunc and pyshared dependency ranges to be more broad to prevent possible resolver warnings/issues
+
 ## 1.4.1
 
 Fixed pyshared dependency range causing issue if certain versions of pyshared were installed without pytest
