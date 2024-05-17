@@ -179,7 +179,7 @@ def test_add_cmd(cmd: T.List[str], local_client: Open2FA):
 )
 def test_delete_cmd(
     cmd: T.List[str],
-    secret: tuple[str, str, str],
+    secret: T.Tuple[str, str, str],
     confirm: str,
     local_client: Open2FA,
 ):
