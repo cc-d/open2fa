@@ -60,8 +60,15 @@ jobs:
       - name: Checkout gh-pages
         run: |
           git fetch
-          git checkout gh-pages
-          git pull origin gh-pages
+          if git branch -a | grep -q 'gh-pages'; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git add .
+            git commit -m "Initial commit"
+            git push -u origin gh-pages
+          fi
+
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
