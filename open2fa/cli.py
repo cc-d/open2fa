@@ -150,7 +150,7 @@ def parse_args() -> argparse.ArgumentParser:
     )
 
     remote_list = remote_subparsers.add_parser(
-        'list', help='List remote secrets'
+        'list', aliases=['l'], help='List remote secrets'
     )
     remote_list.add_argument(
         '-s',
@@ -163,7 +163,9 @@ def parse_args() -> argparse.ArgumentParser:
     )
 
     # Init remote command
-    remote_subparsers.add_parser('init', help='Initialize remote capabilities')
+    remote_subparsers.add_parser(
+        'init', help='Initialize remote capabilities', aliases=['i']
+    )
 
     # Info/Status remote command
     parser_info = subparsers.add_parser(
@@ -180,9 +182,13 @@ def parse_args() -> argparse.ArgumentParser:
         default=False,
     )
     # Push remote command
-    remote_subparsers.add_parser('push', help='Push secrets to remote')
+    remote_subparsers.add_parser(
+        'push', help='Push secrets to remote', aliases=['pus']
+    )
     # Pull remote command
-    remote_subparsers.add_parser('pull', help='Pull secrets from remote')
+    remote_subparsers.add_parser(
+        'pull', help='Pull secrets from remote', aliases=['pul']
+    )
 
     # Delete remote command
     del_parser = remote_subparsers.add_parser(

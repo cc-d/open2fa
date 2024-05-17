@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.4.3
+
+fixed tests for earlier versions of python
+
+added aliases to remote commands
+
+github actions integration
+
+requirements_dev.txt added, dependencies updated
+
+removed setuptools dependency range
+
+remove typehints breaking older python versions
+
 ## 1.4.2
 
 Changed both logfunc and pyshared dependency ranges to be more broad to prevent possible resolver warnings/issues
