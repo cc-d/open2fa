@@ -99,7 +99,7 @@ def exec_cmd(cmd: list, client: Open2FA) -> T.Tuple[Open2FA, str]:
         return client, out.getvalue()
 
 
-def _handle_dash_h(cmd: list[str], client: Open2FA):
+def _handle_dash_h(cmd: T.List[str], client: Open2FA):
     with patch('sys.stdout', new_callable=StringIO) as out, pt.raises(
         SystemExit
     ):
@@ -108,7 +108,7 @@ def _handle_dash_h(cmd: list[str], client: Open2FA):
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
-def test_list_cmd(cmd: list[str], local_client: Open2FA):
+def test_list_cmd(cmd: T.List[str], local_client: Open2FA):
     if '-h' in cmd:
         return _handle_dash_h(cmd, local_client)
     o2fa, out = exec_cmd(cmd, local_client)
@@ -133,7 +133,7 @@ def test_list_cmd(cmd: list[str], local_client: Open2FA):
         ['add', (_TOTP, _NAME)],
     ],
 )
-def test_add_cmd(cmd: list[str], local_client: Open2FA):
+def test_add_cmd(cmd: T.List[str], local_client: Open2FA):
     # no params
     if '-h' in cmd:
         return _handle_dash_h(cmd, local_client)
@@ -178,7 +178,7 @@ def test_add_cmd(cmd: list[str], local_client: Open2FA):
     ],
 )
 def test_delete_cmd(
-    cmd: list[str],
+    cmd: T.List[str],
     secret: tuple[str, str, str],
     confirm: str,
     local_client: Open2FA,
@@ -202,7 +202,7 @@ def test_delete_cmd(
 
 
 @pt.mark.parametrize('cmd', [['g', '-h'], ['generate', '-r', '1']])
-def test_generate_cmd(cmd: list[str], local_client: Open2FA):
+def test_generate_cmd(cmd: T.List[str], local_client: Open2FA):
     if '-h' in cmd:
         return _handle_dash_h(cmd, local_client)
     o2fa, out = exec_cmd(cmd, local_client)
@@ -301,7 +301,7 @@ def test_remote_push(rclient_w_secrets: Open2FA):
 
 
 @pt.mark.parametrize('cmd', [['remote', 'list'], ['remote', 'list', '-s']])
-def test_remote_list(rclient_w_secrets: Open2FA, cmd: list[str]):
+def test_remote_list(rclient_w_secrets: Open2FA, cmd: T.List[str]):
     _ENC_SECRETS = [
         {'enc_secret': rclient_w_secrets.encrypt(sec[0]), 'name': sec[1]}
         for sec in _SECRETS
