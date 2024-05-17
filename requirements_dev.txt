@@ -1,0 +1,13 @@
+-r requirements.txt
+black
+build
+flake8
+isort
+pytest
+pytest-cov
+pytest-asyncio
+pytest-xdist
+pytest-html
+requests
+setuptools
+twine

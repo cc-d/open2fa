@@ -1,0 +1,76 @@
+name: Python CI/CD
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          [
+            '3.5.10-slim',
+            '3.6.13-slim',
+            '3.7.17-slim',
+            '3.8.18-slim',
+            '3.9.19-slim',
+            '3.10.14-slim',
+            '3.11.9-slim',
+            '3.12.3-slim',
+          ]
+    container:
+      image: python:${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements_dev.txt
+      - name: Run tests and generate reports
+        run: |
+          pytest --cov=logfunc --cov-report=xml --html=report.html \
+            --cov-report=term-missing --cov-fail-under=70 -vv \
+            -s tests.py
+      - name: Upload reports as artifacts
+        if: matrix.python-version == '3.11.9-slim'
+        uses: actions/upload-artifact@v2
+        with:
+          name: Reports
+          path: |
+            report.html
+            coverage.xml
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure git
+        run: |
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+      - name: Checkout gh-pages
+        run: |
+          git fetch
+          git checkout gh-pages
+          git pull origin gh-pages
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: Reports
+      - name: Add and Push Reports
+        run: |
+          cp report.html index.html
+          git status
+          git add .
+          git commit -m "Add report to pages"
+          git push -f origin gh-pages
