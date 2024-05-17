@@ -5,6 +5,7 @@ from functools import wraps
 
 import os
 import os.path as osp
+import typing as T
 
 from shutil import rmtree
 from typing import Union as U, Generator as Gen, Callable as Call, Any
@@ -82,7 +83,7 @@ def local_client(ranuuid_module: str, randir: str):
     ]
 
 
-def exec_cmd(cmd: list, client: Open2FA) -> tuple[Open2FA, str]:
+def exec_cmd(cmd: list, client: Open2FA) -> T.Tuple[Open2FA, str]:
     cmd = ['cli.py'] + [str(c) for c in cmd]
     with patch('sys.argv', cmd), patch(
         'sys.stdout', new_callable=StringIO
