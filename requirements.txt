@@ -1,4 +1,4 @@
 base58==2.1.1
 cryptography<=41.0.7
 logfunc>=2.6.0,<3
-pyshare<2,>=1.5
+pyshared<2,>=1.5
