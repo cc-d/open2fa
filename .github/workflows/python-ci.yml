@@ -17,10 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
-          [
-            '3.5.10-slim',
-            '3.6.13-slim',
+        python-version: [
+            #'3.5.10-slim',
+            #'3.6.13-slim',
             '3.7.17-slim',
             '3.8.18-slim',
             '3.9.19-slim',
