@@ -11,8 +11,9 @@ from typing import Union as U, Generator as Gen, Callable as Call, Any
 from uuid import UUID, uuid4
 import base64 as _b64
 import secrets as _secs
+from pyshared import ranstr
+from pyshared.pytest import multiscope_fixture as scope_fixture
 
-from pyshared import multiscope_fixture as scope_fixture, ranstr
 from open2fa.cli import Open2FA, main, sys
 from open2fa.main import apireq, _uinput
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
