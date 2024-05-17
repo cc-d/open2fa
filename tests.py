@@ -229,7 +229,10 @@ def test_generate_cmd(cmd: T.List[str], local_client: Open2FA):
 @pt.fixture
 def remote_client(randir: str):
     client = Open2FA(o2fa_dir=randir, o2fa_uuid=None, o2fa_api_url=_URL)
-    with patch('sys.argv', ['cli.py', 'remote', 'init']):
+    with patch('sys.argv', ['cli.py', 'remote', 'init']), patch(
+        'open2fa.main.input', return_value='y'
+    ):
+
         o2fa = main(
             **{
                 'o2fa_dir': client.dir,
