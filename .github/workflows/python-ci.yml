@@ -37,7 +37,7 @@ jobs:
           pip install -r requirements_dev.txt
       - name: Run tests and generate reports
         run: |
-          pytest --cov=logfunc --cov-report=xml --html=report.html \
+          pytest --cov=open2fa --cov-report=xml --html=report.html \
             --cov-report=term-missing --cov-fail-under=70 -vv \
             -s tests.py
       - name: Upload reports as artifacts
