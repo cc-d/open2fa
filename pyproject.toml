@@ -1,0 +1,73 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "build"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"
+use_parentheses = true
+line_length = 79
+
+[tool.black]
+line_length = 79
+skip_string_normalization = true
+skip_magic_trailing_comma = true
+preview = true
+target-version = ['py37']
+
+[project]
+name = "open2fa"
+version = "1.4.2"
+authors = [
+  { name="Cary Carter", email="ccarterdev@gmail.com" },
+]
+description = "A 2FA CLI tool for generating 2FA codes using TOTP secrets, with an optional SECURE remote api, and an optional web ui enabling 2FA code generation from any device"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests",
+    "logfunc<3.0.0",
+    "cryptography<=41.0.7",
+    "pyshared<1.6.0",
+    "base58==2.1.1",
+]
+
+
+[project.scripts]
+open2fa = "open2fa.cli:entry_point"
+
+[project.urls]
+Homepage = "https://open2fa.liberfy.ai"
+Repository = "https://github.com/cc-d/open2fa"
+Issues = "https://github.com/cc-d/open2fa/issues"
+Server = "https://github.com/cc-d/open2fa-server"
+Documentation = "https://github.com/cc-d/open2fa"
+Changelog = "https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "black",
+    "isort",
+    "flake8",
+    "twine",
+    "build",
+    "pyshared",
+]
+
+
+
