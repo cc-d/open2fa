@@ -202,7 +202,7 @@ def parse_args() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_secrets(secrets: list[TOTPSecret], show_secrets: bool = False):
+def _print_secrets(secrets: TYPE.List[TOTPSecret], show_secrets: bool = False):
     """Prints a list of TOTPSecrets to the console."""
     max_name, max_secret = 4, 6
     if len(secrets) > 0:
