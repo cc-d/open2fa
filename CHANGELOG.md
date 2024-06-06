@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.4.4
+
+updated dependency ranges
+
+updated set version script and documentation
+
 ## 1.4.3
 
 fixed tests for earlier versions of python

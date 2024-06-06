@@ -294,7 +294,7 @@ The tests are not complete, and need to be expanded.
 
 Feel free to open an issue or pull request. If you are opening a pull request, please make sure to run the tests and ensure that the coverage does not decrease, and any new code is covered by tests.
 
-Remember to update the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) with any changes and to update the version in `open2fa/version.py` and `pyproject.toml` (can use the `set_version.py` script).
+Remember to update the [changelog](https://github.com/cc-d/open2fa/blob/main/CHANGELOG.md) with any changes and to update the version in `open2fa/version.py` and `pyproject.toml` (can use the `set_version.sh` script).
 
 ## License
 
