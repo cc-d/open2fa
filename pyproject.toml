@@ -19,7 +19,7 @@ target-version = ['py37']
 
 [project]
 name = "open2fa"
-version = '1.4.4'
+version = '1.4.5'
 authors = [
   { name="Cary Carter", email="ccarterdev@gmail.com" },
 ]

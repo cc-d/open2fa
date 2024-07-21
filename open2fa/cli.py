@@ -164,19 +164,19 @@ def parse_args() -> argparse.ArgumentParser:
 
     # Init remote command
     remote_subparsers.add_parser(
-        'init', help='Initialize remote capabilities', aliases=['i']
+        'init', help='Initialize remote capabilities', aliases=['ini']
     )
 
     # Info/Status remote command
-    parser_info = subparsers.add_parser(
-        'info', help='Show Open2FA info/status', aliases=['i']
+    parser_info = remote_subparsers.add_parser(
+        'info', help='Show Open2FA info/status', aliases=['inf']
     )
 
     parser_info.add_argument(
         '-s',
         '--secret',
         '--secrets',
-        help='Show all info/status info without censorship',
+        help='Show all secrets in status info without censorship',
         dest='show_secrets',
         action='store_true',
         default=False,
@@ -262,6 +262,7 @@ def main(
     Returns:
         Optional[Open2FA]: The Open2FA object.
     """
+
     cli_parser = parse_args()
     cli_args = cli_parser.parse_args()
 
@@ -282,7 +283,10 @@ def main(
     )
 
     # info
-    if cli_args.command == 'info':
+    if cli_args.command == 'info' or (
+        cli_args.command == 'remote'
+        and cli_args.remote_command.startswith('inf')
+    ):
         # check if info -s flag is set
         # use the show_secrets flag to determine if secrets should be shown
         # do NOT use cli_args.secret

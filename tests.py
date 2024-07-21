@@ -407,3 +407,13 @@ def test_ctrl_cmd_c_msg(local_client: Open2FA):
         printed_lines = [c[0][0] for c in mock_print.call_args_list]
         lines = [l.lower() for l in printed_lines]
     assert any(['ctrl' in l.lower() for l in lines])
+
+
+@pt.mark.parametrize('cmd', [['remote', 'info'], ['remote', 'info', '-s']])
+def test_open2fa_remote_info(cmd, rclient_w_secrets: Open2FA):
+    o2fa, out = exec_cmd(cmd, rclient_w_secrets)
+    assert 'open2fa info/status' in out.lower()
+    if '-s' in cmd:
+        assert '...' not in out.lower()
+    else:
+        assert '...' in out.lower()
