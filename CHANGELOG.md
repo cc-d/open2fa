@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.4.6
+
+obscured secret text when no secret/name are provided
+
 ## 1.4.4
 
 updated dependency ranges

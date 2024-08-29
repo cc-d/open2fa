@@ -15,6 +15,7 @@ import requests as req
 from shutil import get_terminal_size
 from logfunc import logf
 from pyshared import truncstr, default_repr
+from getpass import getpass
 
 from . import config
 from . import ex as EX
@@ -41,7 +42,7 @@ _log = logging.getLogger(__name__)
 @logf()
 def _uinput() -> TYPE.Tuple[str, TYPE.Union[str, None]]:
     """Get user input for the secret and name."""
-    secret = input('Enter the TOTP secret: ')
+    secret = getpass('Enter the TOTP secret: ')
     if not valid_sec(secret):
         raise ValueError('Invalid User Input secret: %s' % secret)
     name = input('Enter the name of the secret: ')
