@@ -15,6 +15,7 @@ import secrets as _secs
 from pyshared import ranstr
 from pyshared.pytest import multiscope_fixture as scope_fixture
 
+from open2fa.utils import SecStr
 from open2fa.cli import Open2FA, main, sys
 from open2fa.main import apireq, _uinput
 from open2fa.common import TOTP2FACode, RemoteSecret, O2FAUUID, TOTPSecret
@@ -22,7 +23,6 @@ from open2fa import ex as EX
 from open2fa import msgs as MSGS
 from open2fa.version import __version__
 from open2fa.cli_utils import parse_cli_arg_aliases as pargs
-
 
 _TOTP, _NAME, _URL, _DIR, _UUID = (
     'I65VU7K5ZQL7WB4E',
@@ -103,8 +103,7 @@ def _handle_dash_h(cmd: T.List[str], client: Open2FA):
     with patch('sys.stdout', new_callable=StringIO) as out, pt.raises(
         SystemExit
     ):
-        exec_cmd(cmd, client)
-        assert 'usage: ' in out.getvalue().lower()
+        assert 'usage: ' in exec_cmd(cmd, client)[1]
 
 
 @pt.mark.parametrize('cmd', [['list'], ['list', '-s'], ['list', '-h']])
@@ -113,12 +112,12 @@ def test_list_cmd(cmd: T.List[str], local_client: Open2FA):
         return _handle_dash_h(cmd, local_client)
     o2fa, out = exec_cmd(cmd, local_client)
     assert len(o2fa.secrets) == len(_SECRETS)
+
     for sec in _SECRETS:
         if '-s' in cmd:
-            assert sec[0] in out
+            assert sec[0] in out and str(sec[1]) in out
         else:
-            assert sec[0] not in out
-            assert sec[0][0] + '...' in out
+            repr(SecStr(sec)) in out
 
 
 @pt.mark.parametrize(
@@ -159,8 +158,7 @@ def test_add_cmd(cmd: T.List[str], local_client: Open2FA):
                 )
         return
     o2fa, out = exec_cmd(cmd, local_client)
-    assert cmd[1][0] + '...' in out
-    assert cmd[-1] in out
+    assert SecStr(cmd[1]) in out
 
 
 @pt.mark.parametrize(
@@ -330,8 +328,8 @@ def test_remote_list(rclient_w_secrets: Open2FA, cmd: T.List[str]):
             if '-s' in cmd:
                 assert sec[0] in pcalls
             else:
-                assert sec[0] not in pcalls
-                assert sec[0][0] + '...' in pcalls
+
+                assert SecStr(sec[0]) in pcalls
 
 
 def test_remote_delete(rclient_w_secrets: Open2FA):

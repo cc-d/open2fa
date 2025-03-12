@@ -31,7 +31,6 @@ from .totp import TOTP2FACode, generate_totp_2fa_code
 from .utils import (
     ApiResponse,
     apireq,
-    sec_trunc,
     input_confirm,
     valid_totp_secret as valid_sec,
 )

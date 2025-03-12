@@ -11,10 +11,10 @@ from base58 import b58decode, b58encode
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
-from pyshared import default_repr
+from pyshared import default_repr, truncstr
 
 from .totp import TOTP2FACode, generate_totp_2fa_code
-from .utils import sec_trunc
+from .utils import SecStr
 
 
 class RemoteSecret:
@@ -109,8 +109,7 @@ class TOTPSecret:
     code: TOTP2FACode
 
     def __init__(self, secret: str, name: str):
-        self.secret = secret
-        self.name = name
+        self.secret, self.name = secret, name
         self.code = generate_totp_2fa_code(self.secret)
 
     def generate_code(self) -> TYPE.Union[TOTP2FACode, None]:
@@ -121,8 +120,8 @@ class TOTPSecret:
             return self.code
 
     def __repr__(self) -> str:
-        return default_repr(
-            self, repr_format='<{obj_name} {attributes}>', join_attrs_on=' '
+        return '<TOTPSecret {} {} code={}>'.format(
+            self.name, SecStr.__repr__(self.secret), self.code
         )
 
     def json(self) -> dict:

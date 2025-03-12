@@ -3,16 +3,20 @@ from typing import Optional as Opt
 
 import requests as req
 from logfunc import logf
-from pyshared import truncstr, default_repr
+from pyshared import default_repr
 
 from .totp import generate_totp_2fa_code as gen_code
 from . import ex as EX
+
 from .config import OPEN2FA_API_URL, OPEN2FA_UUID
 
 
-def sec_trunc(secret: str) -> str:
-    """Returns secret like a...b"""
-    return truncstr(secret, start_chars=1, end_chars=1)
+class SecStr(str):
+    def __repr__(self):
+        _len = len(self)
+        _cut = 4 if _len <= 16 else 12
+
+        return self[0:2] + ((_cut * '*') if _len <= 10 else (_cut * '*'))
 
 
 class ApiResponse:

@@ -16,7 +16,7 @@ from . import config
 from . import msgs as MSGS
 from .cli_utils import parse_cli_arg_aliases
 from .main import Open2FA
-from .utils import sec_trunc
+from .utils import SecStr
 from . import version
 from .common import TOTPSecret
 
@@ -208,34 +208,30 @@ def parse_args() -> argparse.ArgumentParser:
     return parser
 
 
+from .utils import SecStr
+
+
 def _print_secrets(secrets: TYPE.List[TOTPSecret], show_secrets: bool = False):
     """Prints a list of TOTPSecrets to the console."""
-    max_name, max_secret = 4, 6
+    max_name, max_secret = 4, 12
     if len(secrets) > 0:
         max_name = max([len(str(s.name)) for s in secrets])
-        max_secret = max(
-            [
-                (
-                    len(str(s.secret))
-                    if show_secrets
-                    else len(sec_trunc(s.secret))
-                )
-                for s in secrets
-            ]
+        max_secret = min(
+            max(
+                [
+                    (len(str(s.secret)) if show_secrets else len(s.secret))
+                    for s in secrets
+                ]
+            ),
+            14,
         )
 
     print('\n' + 'Name'.ljust(max_name) + '    ' + 'Secret'.ljust(max_secret))
 
     print('%s    %s' % ('-' * max_name, '-' * max_secret))
     for s in secrets:
-        _sec = (
-            sec_trunc(s.secret).ljust(max_secret)
-            if not show_secrets
-            else s.secret.ljust(max_secret)
-        )
-        print(
-            '%s    %s' % (str(s.name).ljust(max_name), _sec.ljust(max_secret))
-        )
+
+        print('%s    %r' % (str(s.name).ljust(max_name), SecStr(s.secret)))
     print()
 
 
@@ -322,7 +318,7 @@ def main(
         new_secret = Op2FA.add_secret(cli_args.secret, cli_args.name)
         print(
             MSGS.SECRET_ADDED.format(
-                new_secret.name, sec_trunc(new_secret.secret)
+                new_secret.name, SecStr(new_secret.secret)
             )
         )
         print('{} secrets total.'.format(len(Op2FA.secrets)))
