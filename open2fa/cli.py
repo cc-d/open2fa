@@ -235,7 +235,7 @@ def _print_secrets(secrets: TYPE.List[TOTPSecret], show_secrets: bool = False):
             '%s    %r'
             % (
                 str(s.name).ljust(max_name),
-                SecStr(s.secret) if show_secrets else s.secret,
+                SecStr(s.secret) if not show_secrets else s.secret,
             )
         )
     print()
