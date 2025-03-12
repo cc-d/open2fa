@@ -133,3 +133,6 @@ class TOTPSecret:
 
     def __getitem__(self, key: str) -> str:
         return getattr(self, key)
+
+    def __len__(self):
+        return len(self.secret)

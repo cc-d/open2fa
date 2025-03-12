@@ -215,7 +215,8 @@ def _print_secrets(secrets: TYPE.List[TOTPSecret], show_secrets: bool = False):
     """Prints a list of TOTPSecrets to the console."""
     max_name, max_secret = 4, 12
     if len(secrets) > 0:
-        max_name = max([len(str(s.name)) for s in secrets])
+        max_secret = max([len(s) for s in secrets]) if show_secrets else 12
+
         max_secret = min(
             max(
                 [
@@ -230,8 +231,13 @@ def _print_secrets(secrets: TYPE.List[TOTPSecret], show_secrets: bool = False):
 
     print('%s    %s' % ('-' * max_name, '-' * max_secret))
     for s in secrets:
-
-        print('%s    %r' % (str(s.name).ljust(max_name), SecStr(s.secret)))
+        print(
+            '%s    %r'
+            % (
+                str(s.name).ljust(max_name),
+                SecStr(s.secret) if show_secrets else s.secret,
+            )
+        )
     print()
 
 
