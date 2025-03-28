@@ -30,7 +30,7 @@ jobs:
     container:
       image: python:${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -42,7 +42,7 @@ jobs:
             -s tests.py
       - name: Upload reports as artifacts
         if: matrix.python-version == '3.11.9-slim'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Reports
           path: |
@@ -53,7 +53,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Configure git
         run: |
           git config user.name 'GitHub Actions'
@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: Reports
       - name: Add and Push Reports
